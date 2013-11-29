@@ -1,0 +1,100 @@
+\documentclass[a4paper,10pt]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[english,spanish]{babel}
+\usepackage{graphicx}
+\usepackage{url}
+\usepackage[pageanchor=false,colorlinks,linkcolor=black,anchorcolor=black,
+citecolor=black]{hyperref}
+
+\title{T\'itulo}
+\author{Omar \'Alvarez Mures \\
+	Noelia Luaces Fern\'andez \\
+	Adri\'an Mor\'an Garc\'ia \\
+	Alfonso Nishikawa Mu\~numer \\
+	David Torres Andreu}
+\date{\today}
+
+\hypersetup{pdfinfo={
+Title={T\'itulo},
+Author={Omar \'Alvarez Mures,
+	Noelia Luaces Fern\'andez,
+	Adri\'an Mor\'an Garc\'ia,
+	Alfonso Nishikawa Mu\~numer,
+	David Torres Andreu},
+Subject={},
+Keywords={}
+}}
+
+\hypersetup{
+    %bookmarks=true,         % show bookmarks bar?
+    unicode=true,          % non-Latin characters in Acrobat’s bookmarks
+    pdftoolbar=false,        % show Acrobat’s toolbar?
+    pdfmenubar=true,        % show Acrobat’s menu?
+    pdffitwindow=false,     % window fit to page when opened
+    pdfstartview={FitH},    % fits the width of the page to the window
+    pdftitle={T\'itulo},    % title
+    pdfauthor={Omar \'Alvarez Mures, Noelia Luaces Fern\'andez, Adri\'an Mor\'an 
+Garc\'ia, Alfonso Nishikawa Mu\~numer, David Torres Andreu},     % author
+    pdfsubject={Arquitectura do Software},   % subject of the document
+    pdfcreator={Kile 2.1.3},   % creator of the document
+    pdfproducer={Kile 2.1.3}, % producer of the document
+    pdfkeywords={software architecture} {erlang}, % list of keywords
+    pdfnewwindow=true,      % links in new window
+    colorlinks=true,       % false: boxed links; true: colored links
+    linkcolor=black,          % color of internal links (change box color with linkbordercolor)
+    citecolor=black,        % color of links to bibliography
+    filecolor=black,      % color of file links
+    urlcolor=black           % color of external links
+}
+
+\begin{document}
+
+\maketitle
+
+\newpage
+
+\begin{abstract}
+  Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut iaculis, ante eget 
+vulputate consequat, nisl turpis pulvinar ligula, ac volutpat diam lacus sit 
+amet neque. Nullam blandit sapien mattis congue feugiat. Praesent ultrices nisl 
+lectus, sit amet pellentesque turpis pellentesque a. Suspendisse tincidunt, 
+nulla a accumsan vulputate, ipsum nunc convallis nisi, consequat mattis sapien 
+tellus id augue. Vestibulum sed enim et dolor placerat consectetur ac pretium 
+urna. Donec in dolor purus. Vestibulum neque velit, ultricies eu porttitor 
+vitae, facilisis vel neque. Etiam suscipit felis non quam suscipit, vitae varius 
+nunc faucibus. Cras venenatis sollicitudin ultricies. Cras ultrices vitae est eu 
+commodo. Etiam vel enim pellentesque, varius mauris quis, pretium felis. Donec 
+non imperdiet nisi, a ultrices lorem. Proin gravida odio a velit semper, at 
+egestas urna vestibulum.
+
+Integer diam metus, hendrerit vitae aliquet a, feugiat id arcu. Morbi vitae 
+risus nec lacus molestie varius. Nullam sed posuere lorem, eget laoreet dui. 
+Maecenas nunc massa, blandit ut porttitor id, ornare ac eros. Pellentesque 
+hendrerit dignissim velit feugiat accumsan. Cras scelerisque pharetra leo 
+dapibus dignissim. Integer vestibulum dolor ut lorem mattis egestas.
+
+
+\end{abstract}
+
+\newpage
+
+\tableofcontents
+
+\newpage
+
+\listoftables
+\listoffigures
+
+\newpage
+
+\include{introduction}
+
+\include{conclusions}
+
+\renewcommand{\bibname}{Referencias}
+\addcontentsline{toc}{chapter}{\bibname}
+\bibliography{ref}
+\bibliographystyle{ieeetr}
+
+\end{document}

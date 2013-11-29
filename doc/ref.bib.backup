@@ -1,0 +1,7 @@
+@online{titus01,
+  author = {{Brown, C. Titus} and {Canino-Koning, Rosangela}},
+  title = {Continuous {I}ntegration},
+  year = {2012},
+  howpublished = {\url{http://www.aosabook.org/en/integration.html}},
+  note = {[Online; accessed \today]}
+}
