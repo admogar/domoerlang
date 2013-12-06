@@ -19,7 +19,7 @@ stop(MasterNode) ->
     receive
       {?MASTER, State} ->
         State                                                                                               
-    after 3000 ->
+    after ?TIMEOUT ->
         timeout
     end.
 
@@ -32,7 +32,7 @@ add(MasterNode, Monitor) ->
     receive
       {?MASTER, State} ->
         State
-    after 3000 ->
+    after ?TIMEOUT ->
         timeout
     end.
     
@@ -45,7 +45,7 @@ listMonitors(MasterNode) ->
     receive
       {?MASTER, List} ->
         List
-    after 3000 ->
+    after ?TIMEOUT ->
         timeout
     end.
     
@@ -58,7 +58,7 @@ checkMonitor(MasterNode, Monitor) ->
     receive
       {?MASTER, Value} ->
         Value
-    after 3000 ->
+    after ?TIMEOUT ->
         timeout
     end.
 
@@ -72,7 +72,7 @@ upgrade(MasterNode) ->
     receive
     {?MASTER, ok} ->
 	    ok
-    after 3000 ->
+    after ?TIMEOUT ->
         timeout
     end.
 
@@ -86,6 +86,6 @@ version(MasterNode) ->
     receive
       {?MASTER, Version} ->
         Version
-    after 3000 ->
+    after ?TIMEOUT ->
 	timeout
     end.
