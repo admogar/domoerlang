@@ -1,1 +1,2 @@
 -define(MASTER, master).
+-define(TIMEOUT, 3000).

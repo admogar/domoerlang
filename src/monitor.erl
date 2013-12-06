@@ -12,6 +12,9 @@ init() ->
 
 loop() ->
     receive
+      {From, {ping}} ->
+        From ! {self(),{pong,37}},
+        loop();
 	  Msg ->
 	    io:format("[~p] WTF? ~p~n", [?MODULE, Msg]),
 	    loop()

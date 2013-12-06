@@ -1,7 +1,7 @@
 -module(client).
 -include("client.hrl").
 
--export([start/0, stop/1, add/2, listMonitors/1, upgrade/1, version/1]).
+-export([start/0, stop/1, add/2, listMonitors/1, checkMonitor/2, upgrade/1, version/1]).
 
 %%% start
 %%%
@@ -48,6 +48,20 @@ listMonitors(MasterNode) ->
     after 3000 ->
         timeout
     end.
+    
+%%% checkMonitor
+%%% 
+%%% Comprobar estado sensor
+%%% 
+checkMonitor(MasterNode, Monitor) ->
+    {?MASTER, MasterNode} ! {self(), {check, Monitor}},
+    receive
+      {?MASTER, Value} ->
+        Value
+    after 3000 ->
+        timeout
+    end.
+
 
 %%% upgrade
 %%% 
