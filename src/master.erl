@@ -5,8 +5,7 @@
 
 -export([start/0,loop/1]).
 
-%Change timeout global
-
+%% Arranca master
 start() ->
     spawn(fun() -> init() end),
     ok.
@@ -16,6 +15,13 @@ init() ->
     process_flag(trap_exit, true),
     loop([]).
 
+%% {From, {add, Monitor}} - Anadir un monitor
+%% {From, {list_monitors}} - Lista de monitores en master
+%% {From, {check,Monitor}} - Comprobar estado monitor
+%% {From, {version}} - Version de master
+%% {From, {upgrade}} - Actualizar master en caliente
+%% {From, {stop}} - Parar master
+%% {'EXIT', Pid, Reason} - En caso de error en monitor, reinicio
 loop(Monitors) ->
   receive
     {From, {add, Monitor}} ->
@@ -62,6 +68,7 @@ loop(Monitors) ->
       loop(Monitors)
   end.
 
+%% Creacion de monitor, en caso de que exista no creamos uno nuevo
 getMonitor(Monitor, Monitors) ->
     case lists:keyfind(Monitor, 1, Monitors) of
 	{Monitor, MonitorProc} ->

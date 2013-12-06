@@ -1,2 +1,2 @@
--define(MASTER, master).
--define(TIMEOUT, 3000).
+-define(MASTER, master). %Nombre de proceso de master
+-define(TIMEOUT, 3000). %Timeout de peticiones
