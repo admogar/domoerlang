@@ -1,19 +1,45 @@
+%% -*- coding: utf-8 -*-
+%%%-------------------------------------------------------------------
+%%% @author Omar Álvarez <omar.alvarez@udc.es>
+%%% @author Noelia Luaces <nluaces@gmail.com>
+%%% @author Adrián Morán <admogar@gmail.com>
+%%% @author Alfonso Nishikawa <alfonso.nishikawa@gmail.com>
+%%% @author David Torres <davidtorresandreu@gmail.com>
+%%% @doc Master node. Receives petitions from the client, sends the
+%%% results and handles the monitors.
+%%% @see client
+%%% @see monitor
+%%%
+%%% @end
+%%%-------------------------------------------------------------------
 -module(master).
 -include("client.hrl").
 
+%% PUBLIC API
 -define(VERSION,1).
+-export([start/0, init/1]).
 
--export([start/0,loop/1]).
-
-%% Arranca master
+%%--------------------------------------------------------------------
+%% @doc Starts the master.
+%% @spec start() -> ok | exception
+%% @end
+%%--------------------------------------------------------------------
 start() ->
-    spawn(fun() -> init() end),
+    register(?MASTER, spawn(fun() -> init() end)),
     ok.
 
+%%--------------------------------------------------------------------
+%% @doc Inits or continues the master's execution.
+%% @end
+%%--------------------------------------------------------------------
+init(Monitors) ->
+    loop(Monitors).
+
+%%% Internal Implementation
+
 init() ->
-    register(?MASTER, self()), 
     process_flag(trap_exit, true),
-    loop([]).
+    init([]).
 
 %% {From, {add, Monitor}} - Anadir un monitor
 %% {From, {list_monitors}} - Lista de monitores en master
@@ -52,7 +78,7 @@ loop(Monitors) ->
       loop(Monitors);
     {From, {upgrade}} ->
       From ! {?MASTER,ok},
-      ?MODULE:loop(Monitors);
+      ?MODULE:init(Monitors);
     {From, {stop}} ->
       From ! {?MASTER, stopping};
     {'EXIT', Pid, Reason} -> 
@@ -67,6 +93,7 @@ loop(Monitors) ->
 	 io:format("[~p] WTF? ~p~n", [?MODULE, Msg]),
       loop(Monitors)
   end.
+
 
 %% Creacion de monitor, en caso de que exista no creamos uno nuevo
 getMonitor(Monitor, Monitors) ->

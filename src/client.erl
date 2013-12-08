@@ -1,19 +1,39 @@
+%% -*- coding: utf-8 -*-
+%%%-------------------------------------------------------------------
+%%% @author Omar Álvarez <omar.alvarez@udc.es>
+%%% @author Noelia Luaces <nluaces@gmail.com>
+%%% @author Adrián Morán <admogar@gmail.com>
+%%% @author Alfonso Nishikawa <alfonso.nishikawa@gmail.com>
+%%% @author David Torres <davidtorresandreu@gmail.com>
+%%% @doc Client of the system. Starts and stops the master node.
+%%% @see master
+%%%
+%%% @end
+%%%-------------------------------------------------------------------
 -module(client).
 -include("client.hrl").
 
--export([start/0, stop/1, add/2, listMonitors/1, checkMonitor/2, upgrade/1, version/1]).
+%% PUBLIC API
+-export([start/0, stop/1]).
+-export([add/2, listMonitors/1, checkMonitor/2]).
+-export([upgrade/1, version/1]).
 
-%%% start
-%%%
-%%% Inicia el maestro
-%%%
+%%--------------------------------------------------------------------
+%% @doc Commands the master to start.
+%% @spec start() -> ok
+%% @end
+%%--------------------------------------------------------------------
 start() ->
-    ?MASTER:start().
+    ?MASTER:start(),
+    ok.
 
-%%% stop
-%%%
-%%% Para el maestro
-%%%
+%%--------------------------------------------------------------------
+%% @doc Commands the master to stop.
+%% @spec stop(MasterNode :: pid()) ->
+%%            State :: atom() |
+%%                     timeout 
+%% @end
+%%--------------------------------------------------------------------
 stop(MasterNode) ->
     {?MASTER, MasterNode} ! {self(), {stop}},
     receive
@@ -23,10 +43,13 @@ stop(MasterNode) ->
         timeout
     end.
 
-%%% add
-%%%
-%%% Añadir nuevo monitor
-%%%
+%%--------------------------------------------------------------------
+%% @doc Adds a new monitor.
+%% @spec add(MasterNode :: pid(), Monitor :: pid()) ->
+%%           State :: atom() |
+%%                    timeout
+%% @end
+%%--------------------------------------------------------------------
 add(MasterNode, Monitor) ->
     {?MASTER, MasterNode} ! {self(), {add,Monitor}},
     receive
@@ -36,10 +59,13 @@ add(MasterNode, Monitor) ->
         timeout
     end.
     
-%%% listMonitors
-%%% 
-%%% Listar monitores activos
-%%% 
+%%--------------------------------------------------------------------
+%% @doc Lists active monitors.
+%% @spec listMonitors(MasterNode :: pid()) ->
+%%                    list(pid()) |
+%%                    timeout
+%% @end
+%%--------------------------------------------------------------------
 listMonitors(MasterNode) ->
     {?MASTER, MasterNode} ! {self(), {list_monitors}},
     receive
@@ -49,10 +75,13 @@ listMonitors(MasterNode) ->
         timeout
     end.
     
-%%% checkMonitor
-%%% 
-%%% Comprobar estado sensor
-%%% 
+%%--------------------------------------------------------------------
+%% @doc Checks state of a sensor.
+%% @spec checkMonitor(MasterNode :: pid(), Monitor :: pid()) ->
+%%                    Value :: Integer |
+%%                    timeout
+%% @end
+%%--------------------------------------------------------------------
 checkMonitor(MasterNode, Monitor) ->
     {?MASTER, MasterNode} ! {self(), {check, Monitor}},
     receive
@@ -62,11 +91,11 @@ checkMonitor(MasterNode, Monitor) ->
         timeout
     end.
 
-
-%%% upgrade
-%%% 
-%%% Actualiza servidor.
-%%% 
+%%--------------------------------------------------------------------
+%% @doc Updates the server to the last compiled version.
+%% @spec upgrade(MasterNode :: pid()) -> ok | timeout
+%% @end
+%%--------------------------------------------------------------------
 upgrade(MasterNode) ->
     {?MASTER, MasterNode} ! {self(), {upgrade}},
     receive
@@ -76,11 +105,13 @@ upgrade(MasterNode) ->
         timeout
     end.
 
-
-%%% version
-%%% 
-%%% Que version estamos usando.
-%%% 
+%%--------------------------------------------------------------------
+%% @doc Prints the version on execution.
+%% @spec version(pid()) ->
+%%               nonempty_string() |
+%%               timeout
+%% @end
+%%--------------------------------------------------------------------
 version(MasterNode) ->
     {?MASTER, MasterNode} ! {self(), {version}},
     receive
@@ -89,3 +120,5 @@ version(MasterNode) ->
     after ?TIMEOUT ->
 	timeout
     end.
+
+%%% Internal Implementation
