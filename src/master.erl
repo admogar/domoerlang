@@ -25,7 +25,7 @@
 %% @end
 %%--------------------------------------------------------------------
 start() ->
-    register(?MASTER, spawn(fun() -> init() end)),
+    spawn(fun() -> init() end),
     ok.
 
 %%--------------------------------------------------------------------
@@ -38,6 +38,7 @@ init(Monitors) ->
 %%% Internal Implementation
 
 init() ->
+    register(?MASTER, self()),
     process_flag(trap_exit, true),
     init([]).
 
