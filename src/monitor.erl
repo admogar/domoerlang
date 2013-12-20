@@ -16,33 +16,69 @@
 -include("client.hrl").
 
 %% PUBLIC API
--export([start_link/0, init/0]).
+-export([start_link/2, init/2]).
 
 %%--------------------------------------------------------------------
 %% @doc Starts the monitor.
 %% @spec start_link() -> ok | exception
 %% @end
 %%--------------------------------------------------------------------
-start_link() ->
-    spawn_link(fun() -> init() end),
+start_link(GroupPid, Type) -> % Type : bin | {num, Min, Max}
+    case Type of
+	bin ->
+	    spawn_link(fun() -> init(GroupPid, false) end);
+	{num, Min, Max} ->
+	    spawn_link(fun() -> init(GroupPid, {Min, Min, Max}) end)
+    end,
     ok.
 
 %%--------------------------------------------------------------------
 %% @doc Inits or continues the monitor's execution.
 %% @end
 %%--------------------------------------------------------------------
-init() ->
-    loop().
+init(GroupPid, State) ->
+    loop(GroupPid, State).
 
 %%% Internal implementation %%%
 
-%% {From, {ping}} - Se recibe peticion de master para comprobar estado sensor
-loop() ->
+loop(GroupPid, State) ->
+% {GroupPid, Value}
+% {GroupPid, true}
+
+% {GroupPid, {Value, Min, Max}} *** Implicit type on Value
+% {GroupPid, 5, {0, 10}}
     receive
-      {From, {ping}} ->
-        From ! {self(),{pong,37}}, %%TODO Ahora devuelve numero fijo, crear sensores
-        loop();
-	  Msg ->
-	    io:format("[~p] WTF? ~p~n", [?MODULE, Msg]),
-	    loop()
+	{From, ping} ->
+	    From ! {self(), pong};
+	{From, upgrade} ->
+	    From ! {self(), ok},
+	    ?MODULE:init(GroupPid, State);
+	{From, getValue} ->
+	    case State of
+		{Value, _Min, _Max} -> % num
+		    From ! {self(), Value},
+		    loop(GroupPid, Value);
+		Value -> % bin
+		    From ! {self(), Value},
+		    loop(GroupPid, Value);
+		false ->
+		    From ! badArgument, % FIXME
+		    loop(GroupPid, State)
+	    end;
+	{From, {setValue, NewValue}} ->
+	    case State of
+		{_Value, Min, Max} ->
+		    loop(GroupPid, {NewValue, Min, Max});
+		_Value ->
+		    GroupPid ! {self(), NewValue},
+		    loop(GroupPid, NewValue);
+		false ->
+		    From ! error, % FIXME
+		    loop(GroupPid, State)
+	    end
+    after ?TIMEOUT ->
+	    GroupPid ! {self(), heartbeat},
+	    loop(GroupPid, State)
     end.
+
+% TODO Percentual change function

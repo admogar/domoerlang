@@ -1,2 +1,3 @@
 -define(MASTER, master). % Master node name
 -define(TIMEOUT, 3000). % Petitions timeout
+-define(VARIATION, 20). % Percentual variation
