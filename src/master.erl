@@ -103,8 +103,9 @@ loop(Monitors) ->
       {Monitor, MonitorProc} = lists:keyfind(Pid, 2, Monitors),
       TempMons = lists:keydelete(Pid, 2, Monitors),
       io:format("Error in monitor ~p with process ~p~n", [Monitor,MonitorProc]),
-      {MonitorNewProc, NewMonitors} = getMonitor(Monitor, TempMons),
+      {_MonitorNewProc, NewMonitors} = getMonitor(Monitor, TempMons),
       io:format("Monitor restarted!~n"),
+      simple_smtp_sender:send(?ADMIN_MAIL, ?DOMOERL_MAIL, "Fallo en domoerlang", io_lib:format("<!DOCTYPE html><html><body>El proceso ~p encargado de <strong>~p</strong> se ha petado debido a <strong>~p</strong> y ha habido que reiniciarlo.~n <p></p><img src=\"http://galeri3.uludagsozluk.com/138/facepalm_227785.jpg\" alt=\"Facepalm\"></body></html>", [Pid, Monitor, Reason]),  ?SMTP_SERV, ?SMTP_PORT),
       loop(NewMonitors);
     Msg ->
 	 io:format("[~p] WTF? ~p~n", [?MODULE, Msg]),
