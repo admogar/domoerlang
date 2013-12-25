@@ -18,6 +18,8 @@
 %% PUBLIC API
 -export([start_link/2, init/2]).
 
+-export([configurar_padre/2 , start/1]).
+
 %%--------------------------------------------------------------------
 %% @doc Starts the monitor.
 %% @spec start_link(GroupPid :: pid(),
@@ -40,11 +42,41 @@ start_link(GroupPid, Type) -> % Type : bin | {num, Min, Max}
 %% @end
 %%--------------------------------------------------------------------
 init(GroupPid, State) ->
-    loop(GroupPid, State).
+    loop_stopped(GroupPid, State).
+
+
+%% Configura un Monitor para que envíe las notificaciones a un Grupo
+configurar_padre(PidMonitor, PidGrupo) ->
+    PidMonitor ! {self(), {configurar_padre, PidGrupo}}.
+
+%% Inicia el funcionamiento del monitor (transición del estado a 'start')
+start(PidMonitor) ->
+    PidMonitor ! {self(), {start}}.
+    
 
 %%% Internal implementation %%%
 
-loop(GroupPid, State) ->
+%%% ====================== Estado STOPPED ===============================
+loop_stopped(GroupPid,State) ->
+    receive
+    {From, ping} ->
+        From ! {self(), pong} ;
+        
+    {From, upgrade} ->
+        From ! {self(), ok},
+        ?MODULE:init(GroupPid, State);
+        
+    {_From, {configurar_padre, NuevoPidGrupo}} ->
+        loop_stopped(NuevoPidGrupo, State) ;
+
+    {_From, {start}} ->
+        loop_started(GroupPid, State)
+    
+    end.
+
+%%% ====================== Estado STARTED ===============================
+
+loop_started(GroupPid, State) ->
 % {GroupPid, Value}
 % {GroupPid, true}
 
@@ -52,36 +84,40 @@ loop(GroupPid, State) ->
 % {GroupPid, 5, {0, 10}}
     receive
 	{From, ping} ->
-	    From ! {self(), pong};
+	    From ! {self(), pong} ;
+        
 	{From, upgrade} ->
 	    From ! {self(), ok},
 	    ?MODULE:init(GroupPid, State);
+        
 	{From, getValue} ->
 	    case State of
-		{Value, Min, Max} -> % num
+		{Value, _Min, _Max} -> % num
 		    From ! {self(), Value},
-		    loop(GroupPid, State);
+		    loop_started(GroupPid, State);
 		Value -> % bin
 		    From ! {self(), Value},
-		    loop(GroupPid, State);
+		    loop_started(GroupPid, State);
 		false ->
 		    From ! badArgument, % FIXME
-		    loop(GroupPid, State)
+		    loop_started(GroupPid, State)
 	    end;
+        
 	{From, {setValue, NewValue}} ->
 	    case State of
 		{_Value, Min, Max} ->
-		    loop(GroupPid, {NewValue, Min, Max});
+		    loop_started(GroupPid, {NewValue, Min, Max});
 		_Value ->
 		    GroupPid ! {self(), NewValue},
-		    loop(GroupPid, NewValue);
+		    loop_started(GroupPid, NewValue);
 		false ->
 		    From ! error, % FIXME
-		    loop(GroupPid, State)
+		    loop_started(GroupPid, State)
 	    end
+
     after ?TIMEOUT ->
 	    GroupPid ! {self(), heartbeat},
-	    loop(GroupPid, State)
+	    loop_started(GroupPid, State)
     end.
 
 % TODO Percentual change function
