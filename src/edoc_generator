@@ -1,0 +1,3 @@
+#!/bin/bash
+cd edoc;
+erl -s edoc files ../client.erl ../master.erl ../monitor.erl ../sensor.erl ../simple_smtp_sender.erl -run init stop -noshell
