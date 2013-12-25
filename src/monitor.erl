@@ -20,7 +20,10 @@
 
 %%--------------------------------------------------------------------
 %% @doc Starts the monitor.
-%% @spec start_link() -> ok | exception
+%% @spec start_link(GroupPid :: pid(),
+%%                  Type:: atom()
+%%                  | {atom, Min :: integer(), Max :: integer()})
+%%                  -> ok | exception
 %% @end
 %%--------------------------------------------------------------------
 start_link(GroupPid, Type) -> % Type : bin | {num, Min, Max}
@@ -55,12 +58,12 @@ loop(GroupPid, State) ->
 	    ?MODULE:init(GroupPid, State);
 	{From, getValue} ->
 	    case State of
-		{Value, _Min, _Max} -> % num
+		{Value, Min, Max} -> % num
 		    From ! {self(), Value},
-		    loop(GroupPid, Value);
+		    loop(GroupPid, State);
 		Value -> % bin
 		    From ! {self(), Value},
-		    loop(GroupPid, Value);
+		    loop(GroupPid, State);
 		false ->
 		    From ! badArgument, % FIXME
 		    loop(GroupPid, State)

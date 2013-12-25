@@ -51,7 +51,7 @@ stop(MasterNode) ->
 %% @end
 %%--------------------------------------------------------------------
 add(MasterNode, Monitor) ->
-    {?MASTER, MasterNode} ! {self(), {add,Monitor}},
+    {?MASTER, MasterNode} ! {self(), {add, Monitor}},
     receive
       {?MASTER, State} ->
         State
