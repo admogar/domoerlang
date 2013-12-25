@@ -17,7 +17,8 @@
 
 %% PUBLIC API
 -define(VERSION,1).
--export([start/0, init/1]).
+-export([start/0, stop/0]).
+-export([init/1]).
 
 %%--------------------------------------------------------------------
 %% @doc Starts the master.
@@ -27,6 +28,20 @@
 start() ->
     spawn(fun() -> init() end),
     ok.
+
+%%--------------------------------------------------------------------
+%% @doc Stops the master.
+%% @spec stop() -> ok | timeout
+%% @end
+%%--------------------------------------------------------------------
+stop() ->
+    ?MASTER ! {self(), {stop}},
+    receive
+	{?MASTER, stopping} ->
+	    ok
+    after ?TIMEOUT ->
+	    timeout
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc Inits or continues the master's execution.
@@ -79,6 +94,7 @@ loop(Monitors) ->
       loop(Monitors);
     {From, {upgrade}} ->
       From ! {?MASTER,ok},
+      %TODO: PROPAGAR UPGRADE A LISTA
       ?MODULE:init(Monitors);
     {From, {stop}} ->
       From ! {?MASTER, stopping};
