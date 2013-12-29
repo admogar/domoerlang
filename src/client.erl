@@ -45,8 +45,8 @@ stop(MasterNode) ->
 
 %%--------------------------------------------------------------------
 %% @doc Adds a new monitor.
-%% @spec add(MasterNode :: pid(), Monitor :: pid()) ->
-%%           State :: atom() |
+%% @spec add(MasterNode :: pid(), Monitor :: atom()) ->
+%%           Monitor :: pid() |
 %%                    timeout
 %% @end
 %%--------------------------------------------------------------------
