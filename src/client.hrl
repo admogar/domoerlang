@@ -5,3 +5,5 @@
 -define(SMTP_SERV, "smtpcorp.com"). % SMTP server for mails
 -define(SMTP_PORT,2525).
 -define(VARIATION, 20). % Percentual variation
+
+-define(SENSOR_TIMEOUT, 1000). % Timeout para que los sensores intenten generar un nuevo valor
