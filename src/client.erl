@@ -35,7 +35,7 @@ start() ->
 %% @end
 %%--------------------------------------------------------------------
 stop(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), {stop}},
+    {?MASTER, MasterNode} ! {self(), stop},
     receive
       {?MASTER, State} ->
         State                                                                                               
@@ -67,7 +67,7 @@ add(MasterNode, Monitor) ->
 %% @end
 %%--------------------------------------------------------------------
 listMonitors(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), {list_monitors}},
+    {?MASTER, MasterNode} ! {self(), list_monitors},
     receive
       {?MASTER, List} ->
         List
@@ -97,7 +97,7 @@ checkMonitor(MasterNode, Monitor) ->
 %% @end
 %%--------------------------------------------------------------------
 upgrade(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), {upgrade}},
+    {?MASTER, MasterNode} ! {self(), upgrade},
     receive
     {?MASTER, ok} ->
 	    ok
@@ -113,7 +113,7 @@ upgrade(MasterNode) ->
 %% @end
 %%--------------------------------------------------------------------
 version(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), {version}},
+    {?MASTER, MasterNode} ! {self(), version},
     receive
       {?MASTER, Version} ->
         Version

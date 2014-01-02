@@ -24,7 +24,7 @@
 %% @doc Starts the monitor.
 %% @spec start_link(GroupPid :: pid(),
 %%                  Type:: atom()
-%%                  | {atom, Min :: integer(), Max :: integer()})
+%%                  | {atom(), Min :: integer(), Max :: integer()})
 %%                  -> ok | exception
 %% @end
 %%--------------------------------------------------------------------
@@ -45,33 +45,30 @@ init(GroupPid, State) ->
     loop_stopped(GroupPid, State).
 
 
-%% Configura un Monitor para que envíe las notificaciones a un Grupo
+%% Configura un Monitor para que envÃ­e las notificaciones a un Grupo
 configurar_padre(PidMonitor, PidGrupo) ->
     PidMonitor ! {self(), {configurar_padre, PidGrupo}}.
 
-%% Inicia el funcionamiento del monitor (transición del estado a 'start')
+%% Inicia el funcionamiento del monitor (transiciÃ³n del estado a 'start')
 start(PidMonitor) ->
-    PidMonitor ! {self(), {start}}.
+    PidMonitor ! {self(), start}.
     
 
 %%% Internal implementation %%%
 
 %%% ====================== Estado STOPPED ===============================
-loop_stopped(GroupPid,State) ->
+loop_stopped(GroupPid, State) ->
     receive
-    {From, ping} ->
-        From ! {self(), pong} ;
-        
-    {From, upgrade} ->
-        From ! {self(), ok},
-        ?MODULE:init(GroupPid, State);
-        
-    {_From, {configurar_padre, NuevoPidGrupo}} ->
-        loop_stopped(NuevoPidGrupo, State) ;
-
-    {_From, {start}} ->
-        loop_started(GroupPid, State)
-    
+	{From, ping} ->
+	    From ! {self(), pong},
+	    loop_stopped(GroupPid, State);
+	{From, upgrade} ->
+	    From ! {self(), ok},
+	    ?MODULE:init(GroupPid, State);
+    	{_From, {configurar_padre, NewGroupPid}} ->
+	    loop_stopped(NewGroupPid, State) ;
+	{_From, start} ->
+	    loop_started(GroupPid, State)
     end.
 
 %%% ====================== Estado STARTED ===============================
@@ -84,12 +81,11 @@ loop_started(GroupPid, State) ->
 % {GroupPid, 5, {0, 10}}
     receive
 	{From, ping} ->
-	    From ! {self(), pong} ;
-        
+	    From ! {self(), pong},
+	    loop_stopped(GroupPid, State);
 	{From, upgrade} ->
 	    From ! {self(), ok},
 	    ?MODULE:init(GroupPid, State);
-        
 	{From, getValue} ->
 	    case State of
 		{Value, _Min, _Max} -> % num
@@ -102,7 +98,6 @@ loop_started(GroupPid, State) ->
 		    From ! badArgument, % FIXME
 		    loop_started(GroupPid, State)
 	    end;
-        
 	{From, {setValue, NewValue}} ->
 	    case State of
 		{_Value, Min, Max} ->
@@ -114,7 +109,6 @@ loop_started(GroupPid, State) ->
 		    From ! error, % FIXME
 		    loop_started(GroupPid, State)
 	    end
-
     after ?TIMEOUT ->
 	    GroupPid ! {self(), heartbeat},
 	    loop_started(GroupPid, State)

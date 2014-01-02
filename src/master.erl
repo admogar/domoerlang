@@ -71,16 +71,16 @@ loop(Monitors) ->
       %io:format(" WTF? ~n"),
       From ! {?MASTER, MonitorProc},
       loop(NewMonitors);
-    {From, {list_monitors}} ->
+    {From, list_monitors} ->
       From ! {?MASTER, Monitors},
       loop(Monitors);
-    {From, {check,Monitor}} ->
+    {From, {check, Monitor}} ->
       case lists:keyfind(Monitor, 1, Monitors) of
 	 {Monitor, MonitorProc} ->
         %From ! {?MASTER, MonitorProc},
         MonitorProc ! {?MASTER, {ping}},
         receive
-          {MonitorProc, {pong,Value}} ->
+          {MonitorProc, {pong, Value}} ->
             From ! {?MASTER, Value}
         after ?TIMEOUT ->
             timeout
@@ -89,14 +89,14 @@ loop(Monitors) ->
         io:format("Monitor *~p* does not exist~n",[Monitor])
       end,
       loop(Monitors);
-    {From, {version}} ->
+    {From, version} ->
       From ! {?MASTER, ?VERSION},
       loop(Monitors);
-    {From, {upgrade}} ->
-      From ! {?MASTER,ok},
+    {From, upgrade} ->
+      From ! {?MASTER, ok},
       %TODO: PROPAGAR UPGRADE A LISTA
       ?MODULE:init(Monitors);
-    {From, {stop}} ->
+    {From, stop} ->
       From ! {?MASTER, stopping};
     {'EXIT', Pid, Reason} -> 
       io:format("Got exit signal from ~p: ~p~n", [Pid,Reason]),

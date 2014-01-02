@@ -1,8 +1,8 @@
 %% -*- coding: utf-8 -*-
 %%%-------------------------------------------------------------------
-%%% @author Omar ¡lvarez <omar.alvarez@udc.es>
+%%% @author Omar √Ålvarez <omar.alvarez@udc.es>
 %%% @author Noelia Luaces <nluaces@gmail.com>
-%%% @author Adri·n Mor·n <admogar@gmail.com>
+%%% @author Adri√°n Mor√°n <admogar@gmail.com>
 %%% @author Alfonso Nishikawa <alfonso.nishikawa@gmail.com>
 %%% @author David Torres <davidtorresandreu@gmail.com>
 %%% @doc
@@ -18,13 +18,13 @@
 %%% 
 %%% === Crear un grupo ===
 %%% El master *ha de crear el grupo*, siendo el master quien decide si desea enlazarse o no
-%%% (el enlazamiento depender· de quiÈn estÈ observando, no al revÈs).
+%%% (el enlazamiento depender√° de qui√©n est√© observando, no al rev√©s).
 %%% 
-%%% Para ello se dispone de la funciÛn {@link crear_grupo/0}
-%%% Por cuestiones de comodidad se dispone tambiÈn de la funcion {@link crear_y_enlazar/0} 
+%%% Para ello se dispone de la funci√≥n {@link crear_grupo/0}
+%%% Por cuestiones de comodidad se dispone tambi√©n de la funci√≥n {@link crear_y_enlazar/0} 
 %%%
-%%% === AÒadir monitor al grupo ===
-%%% Para aÒadir un monitor se dispone de la funciÛn {@link aÒadir_monitor/1}
+%%% === A√±adir monitor al grupo ===
+%%% Para a√±adir un monitor se dispone de la funci√≥n {@link a√±adir_monitor/1}
 %%%
 %%%
 %%%
@@ -42,7 +42,7 @@
 
 
 crear_grupo() ->
-    spawn(?MODULE, fun() -> init() end ,[]).
+    spawn(?MODULE, fun() -> init() end , []).
 
 crear_y_enlazar() ->
     spawn_link(?MODULE, fun() -> init() end , []).
@@ -52,12 +52,12 @@ crear_y_enlazar() ->
 %% Internal functions
 %% ====================================================================
 
-% Ver documentaciÛn sobre conjuntos (mÛdulo 'sets'): http://www.erlang.org/doc/man/sets.html
+% Ver documentaci√≥n sobre conjuntos (m√≥dulo 'sets'): http://www.erlang.org/doc/man/sets.html
 
 
 init() ->
     process_flag(trap_exit, true),
-    loop(sets:new()). % Lista vacÌa de monitores
+    loop(sets:new()). % Lista vac√≠a de monitores
 
 
 % Monitores :: set(PidMonitor,...)
@@ -69,9 +69,9 @@ loop(Monitores) ->
             case sets:is_element(PidMonitor, Monitores) of
                 true -> loop(Monitores)
                 ; false ->
-                    % Si no contenemos el monitor lo aÒadimos y configuramos
+                    % Si no contenemos el monitor lo a√±adimos y configuramos
                     NuevosMonitores = sets:add_element(PidMonitor, Monitores),
-                    monitor:configurar_padre(PidMonitor, self()), % Monitor notificar· a self
+                    monitor:configurar_padre(PidMonitor, self()), % Monitor notificar√° a self
 
                     loop(NuevosMonitores)
             end
