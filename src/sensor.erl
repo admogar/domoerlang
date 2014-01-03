@@ -16,47 +16,45 @@
 
 %% PUBLIC API
 -define(VERSION, 1).
--export([start/2]).
+-export([start/1).
 
 %%--------------------------------------------------------------------
 %% @doc Starts the sensor.
-%% @spec start(SensorID :: atom(),
-%%             Type :: {num :: atom(), Min :: integer(), Max :: integer()}
-%%                     | bin :: atom())
+%% @spec start(Type :: {num :: atom(), Min :: integer(), Max :: integer()}
+%%             | bin :: atom())
 %%       -> pid() | exception
 %% @end
 %%--------------------------------------------------------------------
-start(SensorID, Type) ->
-    spawn(fun() -> init(SensorID, Type) end).
+start(Type) ->
+    spawn(fun() -> init(Type) end).
 
 %%% Internal Implementation
 
-init(SensorID, State) ->
+init(State) ->
     case State of
 	{num, Min, Max} ->
-	    initializing(SensorID, {Min, Min, Max});
+	    initializing({Min, Min, Max});
 	bin ->
-	    initializing(SensorID, false)
+	    initializing(false)
     end.
 
-initializing(SensorID, State) ->
+initializing(State) ->
     receive
 	{From, setObserver} ->
 	    From ! {self(), initialized},
-	    loop(SensorID, State, From)
+	    loop(State, From)
     end.
 
-loop(SensorID, State, MonitorPID) ->
+loop(State, MonitorPID) ->
     timer:sleep(?TIMEOUT),
+    random:seed(erlang:now()),
     case State of
 	{_Value, Min, Max} ->
-	    random:seed(erlang:now()),
 	    NewValue = Min+random:uniform(Max+1-Min)-1,
-	    MonitorPID ! {self(), NewValue},
-	    loop(SensorID, {NewValue, Min, Max}, MonitorPID);
+	    NewState = {NewValue, Min, Max};
 	_Value ->
-	    random:seed(erlang:now()),
 	    NewValue = (random:uniform(2) == 1),
-	    MonitorPID ! {self(), NewValue},
-	    loop(SensorID, NewValue, MonitorPID)
-    end.
+	    NewState = NewValue
+    end,
+    MonitorPID ! {self(), NewValue},
+    loop(NewState, MonitorPID).
