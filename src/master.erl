@@ -39,7 +39,8 @@ stop() ->
     receive
 	{?MASTER, stopping} ->
 	    ok
-    after ?TIMEOUT ->
+    after
+	?TIMEOUT ->
 	    timeout
     end.
 
@@ -58,59 +59,60 @@ init() ->
     init([]).
 
 %% {From, {add, Monitor}} - Anadir un monitor
-%% {From, {list_monitors}} - Lista de monitores en master
-%% {From, {check,Monitor}} - Comprobar estado monitor
-%% {From, {version}} - Version de master
-%% {From, {upgrade}} - Actualizar master en caliente
-%% {From, {stop}} - Parar master
+%% {From, list_monitors} - Lista de monitores en master
+%% {From, {check, Monitor}} - Comprobar estado monitor
+%% {From, version} - Version de master
+%% {From, upgrade} - Actualizar master en caliente
+%% {From, stop} - Parar master
 %% {'EXIT', Pid, Reason} - En caso de error en monitor, reinicio
 loop(Monitors) ->
-  receive
-    {From, {add, Monitor}} ->
-      {MonitorProc, NewMonitors} = getMonitor(Monitor, Monitors),
-      %io:format(" WTF? ~n"),
-      From ! {?MASTER, MonitorProc},
-      loop(NewMonitors);
-    {From, list_monitors} ->
-      From ! {?MASTER, Monitors},
-      loop(Monitors);
-    {From, {check, Monitor}} ->
-      case lists:keyfind(Monitor, 1, Monitors) of
-	 {Monitor, MonitorProc} ->
-        %From ! {?MASTER, MonitorProc},
-        MonitorProc ! {?MASTER, {ping}},
-        receive
-          {MonitorProc, {pong, Value}} ->
-            From ! {?MASTER, Value}
-        after ?TIMEOUT ->
-            timeout
-        end;
-      false ->
-        io:format("Monitor *~p* does not exist~n",[Monitor])
-      end,
-      loop(Monitors);
-    {From, version} ->
-      From ! {?MASTER, ?VERSION},
-      loop(Monitors);
-    {From, upgrade} ->
-      From ! {?MASTER, ok},
-      %TODO: PROPAGAR UPGRADE A LISTA
-      ?MODULE:init(Monitors);
-    {From, stop} ->
-      From ! {?MASTER, stopping};
-    {'EXIT', Pid, Reason} -> 
-      io:format("Got exit signal from ~p: ~p~n", [Pid,Reason]),
-      {Monitor, MonitorProc} = lists:keyfind(Pid, 2, Monitors),
-      TempMons = lists:keydelete(Pid, 2, Monitors),
-      io:format("Error in monitor ~p with process ~p~n", [Monitor,MonitorProc]),
-      {_MonitorNewProc, NewMonitors} = getMonitor(Monitor, TempMons),
-      io:format("Monitor restarted!~n"),
-      simple_smtp_sender:send(?ADMIN_MAIL, ?DOMOERL_MAIL, "Fallo en domoerlang", io_lib:format("<!DOCTYPE html><html><body>El proceso ~p encargado de <strong>~p</strong> se ha petado debido a <strong>~p</strong> y ha habido que reiniciarlo.~n <p></p><img src=\"http://galeri3.uludagsozluk.com/138/facepalm_227785.jpg\" alt=\"Facepalm\"></body></html>", [Pid, Monitor, Reason]),  ?SMTP_SERV, ?SMTP_PORT),
-      loop(NewMonitors);
-    Msg ->
-	 io:format("[~p] WTF? ~p~n", [?MODULE, Msg]),
-      loop(Monitors)
-  end.
+    receive
+	{From, {add, Monitor}} ->
+	    {MonitorProc, NewMonitors} = getMonitor(Monitor, Monitors),
+						%io:format(" WTF? ~n"),
+	    From ! {?MASTER, MonitorProc},
+	    loop(NewMonitors);
+	{From, list_monitors} ->
+	    From ! {?MASTER, Monitors},
+	    loop(Monitors);
+	{From, {check, Monitor}} ->
+	    case lists:keyfind(Monitor, 1, Monitors) of
+		{Monitor, MonitorProc} ->
+		    %From ! {?MASTER, MonitorProc},
+		    MonitorProc ! {?MASTER, ping},
+		    receive
+			{MonitorProc, {pong, Value}} ->
+			    From ! {?MASTER, Value}
+		    after
+			?TIMEOUT ->
+			    timeout
+		    end;
+		false ->
+		    io:format("Monitor *~p* does not exist~n",[Monitor])
+	    end,
+	    loop(Monitors);
+	{From, version} ->
+	    From ! {?MASTER, ?VERSION},
+	    loop(Monitors);
+	{From, upgrade} ->
+	    From ! {?MASTER, upgrading},
+            %TODO: PROPAGAR UPGRADE A LISTA
+	    ?MODULE:init(Monitors);
+	{From, stop} ->
+	    From ! {?MASTER, stopping};
+	{'EXIT', Pid, Reason} -> 
+	    io:format("Got exit signal from ~p: ~p~n", [Pid,Reason]),
+	    {Monitor, MonitorProc} = lists:keyfind(Pid, 2, Monitors),
+	    TempMons = lists:keydelete(Pid, 2, Monitors),
+	    io:format("Error in monitor ~p with process ~p~n", [Monitor,MonitorProc]),
+	    {_MonitorNewProc, NewMonitors} = getMonitor(Monitor, TempMons),
+	    io:format("Monitor restarted!~n"),
+	    simple_smtp_sender:send(?ADMIN_MAIL, ?DOMOERL_MAIL, "Fallo en domoerlang", io_lib:format("<!DOCTYPE html><html><body>El proceso ~p encargado de <strong>~p</strong> se ha petado debido a <strong>~p</strong> y ha habido que reiniciarlo.~n <p></p><img src=\"http://galeri3.uludagsozluk.com/138/facepalm_227785.jpg\" alt=\"Facepalm\"></body></html>", [Pid, Monitor, Reason]),  ?SMTP_SERV, ?SMTP_PORT),
+	    loop(NewMonitors);
+	Msg ->
+	    io:format("[~p] WTF? ~p~n", [?MODULE, Msg]),
+	    loop(Monitors)
+    end.
 
 
 %% Creacion de monitor, en caso de que exista no creamos uno nuevo
@@ -118,7 +120,7 @@ getMonitor(Monitor, Monitors) ->
     case lists:keyfind(Monitor, 1, Monitors) of
 	{Monitor, MonitorProc} ->
 	    {MonitorProc, Monitors};
-    false ->
+	false ->
 	    NewMonitor = monitor:start_link(),
 	    {NewMonitor, [{Monitor,NewMonitor} | Monitors]}
     end.
