@@ -37,58 +37,59 @@ start() ->
 stop(MasterNode) ->
     {?MASTER, MasterNode} ! {self(), stop},
     receive
-      {?MASTER, State} ->
-        State                                                                                               
-    after ?TIMEOUT ->
-        timeout
+	{?MASTER, State} ->
+	    State
+    after
+	?TIMEOUT ->
+	    timeout
     end.
 
 %%--------------------------------------------------------------------
 %% @doc Adds a new monitor.
-%% @spec add(MasterNode :: pid(), Monitor :: atom()) ->
-%%           Monitor :: pid() |
-%%                    timeout
+%% @spec add(MasterNode :: pid(), Monitor :: pid()) ->
+%%           State :: pid() | timeout
 %% @end
 %%--------------------------------------------------------------------
 add(MasterNode, Monitor) ->
     {?MASTER, MasterNode} ! {self(), {add, Monitor}},
     receive
-      {?MASTER, State} ->
-        State
-    after ?TIMEOUT ->
-        timeout
+	{?MASTER, State} ->
+	    State
+    after
+	?TIMEOUT ->
+	    timeout
     end.
     
 %%--------------------------------------------------------------------
 %% @doc Lists active monitors.
 %% @spec listMonitors(MasterNode :: pid()) ->
-%%                    list(pid()) |
-%%                    timeout
+%%                    list(pid()) | timeout
 %% @end
 %%--------------------------------------------------------------------
 listMonitors(MasterNode) ->
     {?MASTER, MasterNode} ! {self(), list_monitors},
     receive
-      {?MASTER, List} ->
-        List
-    after ?TIMEOUT ->
-        timeout
+	{?MASTER, List} ->
+	    List
+    after
+	?TIMEOUT ->
+	    timeout
     end.
     
 %%--------------------------------------------------------------------
 %% @doc Checks state of a sensor.
 %% @spec checkMonitor(MasterNode :: pid(), Monitor :: pid()) ->
-%%                    Value :: Integer |
-%%                    timeout
+%%                    Value :: integer() | timeout
 %% @end
 %%--------------------------------------------------------------------
 checkMonitor(MasterNode, Monitor) ->
     {?MASTER, MasterNode} ! {self(), {check, Monitor}},
     receive
-      {?MASTER, Value} ->
-        Value
-    after ?TIMEOUT ->
-        timeout
+	{?MASTER, Value} ->
+	    Value
+    after
+	?TIMEOUT ->
+	    timeout
     end.
 
 %%--------------------------------------------------------------------
@@ -99,10 +100,11 @@ checkMonitor(MasterNode, Monitor) ->
 upgrade(MasterNode) ->
     {?MASTER, MasterNode} ! {self(), upgrade},
     receive
-    {?MASTER, ok} ->
+	{?MASTER, upgrading} ->
 	    ok
-    after ?TIMEOUT ->
-        timeout
+    after
+	?TIMEOUT ->
+	    timeout
     end.
 
 %%--------------------------------------------------------------------
@@ -115,10 +117,11 @@ upgrade(MasterNode) ->
 version(MasterNode) ->
     {?MASTER, MasterNode} ! {self(), version},
     receive
-      {?MASTER, Version} ->
-        Version
-    after ?TIMEOUT ->
-	timeout
+	{?MASTER, Version} ->
+	    Version
+    after
+	?TIMEOUT ->
+	    timeout
     end.
 
 %%% Internal Implementation
