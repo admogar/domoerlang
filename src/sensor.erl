@@ -15,32 +15,48 @@
 -include("client.hrl").
 
 %% PUBLIC API
--define(VERSION,1).
--export([start/0]).
--export([init/1]).
+-define(VERSION, 1).
+-export([start/2]).
 
 %%--------------------------------------------------------------------
 %% @doc Starts the sensor.
-%% @spec start() -> ok | exception
+%% @spec start(SensorID :: atom(),
+%%             Type :: {num :: atom(), Min :: integer(), Max :: integer()}
+%%                     | bin :: atom())
+%%       -> pid() | exception
 %% @end
 %%--------------------------------------------------------------------
-start() ->
-    spawn(fun() -> init() end),
-    ok.
-
-%%--------------------------------------------------------------------
-%% @doc Inits or continues the sensor's execution.
-%% @end
-%%--------------------------------------------------------------------
-init(Monitors) ->
-    loop(Monitors).
+start(SensorID, Type) ->
+    spawn(fun() -> init(SensorID, Type) end).
 
 %%% Internal Implementation
 
-init() ->
-    %register(?MASTER, self()),
-    %process_flag(trap_exit, true),
-    init([]).
+init(SensorID, State) ->
+    case State of
+	{num, Min, Max} ->
+	    initializing(SensorID, {Min, Min, Max});
+	bin ->
+	    initializing(SensorID, false)
+    end.
 
-loop(Monitors) ->
-    ok.
+initializing(SensorID, State) ->
+    receive
+	{From, setObserver} ->
+	    From ! {self(), initialized},
+	    loop(SensorID, State, From)
+    end.
+
+loop(SensorID, State, MonitorPID) ->
+    timer:sleep(?TIMEOUT),
+    case State of
+	{_Value, Min, Max} ->
+	    random:seed(erlang:now()),
+	    NewValue = Min+random:uniform(Max+1-Min)-1,
+	    MonitorPID ! {self(), NewValue},
+	    loop(SensorID, {NewValue, Min, Max}, MonitorPID);
+	_Value ->
+	    random:seed(erlang:now()),
+	    NewValue = (random:uniform(2) == 1),
+	    MonitorPID ! {self(), NewValue},
+	    loop(SensorID, NewValue, MonitorPID)
+    end.
