@@ -8,6 +8,7 @@
 %%% @doc Monitor of an automation component. Checks its state and,
 %%% if that's the case, sends orders to it.
 %%% @see master
+%%% @see grupo
 %%%
 %%% @end
 %%%-------------------------------------------------------------------
@@ -23,8 +24,8 @@
 %%--------------------------------------------------------------------
 %% @doc Starts the monitor.
 %% @spec start_link(GroupPid :: pid(),
-%%                  Type:: atom()
-%%                  | {atom(), Min :: integer(), Max :: integer()})
+%%                  Type:: bin
+%%                  | {num, Min :: integer(), Max :: integer()})
 %%                  -> ok | exception
 %% @end
 %%--------------------------------------------------------------------
@@ -44,12 +45,21 @@ start_link(GroupPid, Type) -> % Type : bin | {num, Min, Max}
 init(GroupPid, State) ->
     loop_stopped(GroupPid, State).
 
-
-%% Configura un Monitor para que envíe las notificaciones a un Grupo
+%%--------------------------------------------------------------------
+%% @doc Configures a monitor in order to send notifications to a group
+%% @spec configurar_padre(PidMonitor :: pid(),
+%%                        PidGrupo :: pid())
+%%                        -> ok
+%% @end
+%%--------------------------------------------------------------------
 configurar_padre(PidMonitor, PidGrupo) ->
     PidMonitor ! {self(), {configurar_padre, PidGrupo}}.
 
-%% Inicia el funcionamiento del monitor (transición del estado a 'start')
+%%--------------------------------------------------------------------
+%% @doc Changes the monitor state to working
+%% @spec start(PidMonitor :: pid()) -> starting
+%% @end
+%%--------------------------------------------------------------------
 start(PidMonitor) ->
     PidMonitor ! {self(), start}.
     
@@ -65,9 +75,11 @@ loop_stopped(GroupPid, State) ->
 	{From, upgrade} ->
 	    From ! {self(), ok},
 	    ?MODULE:init(GroupPid, State);
-    	{_From, {configurar_padre, NewGroupPid}} ->
+    	{From, {configurar_padre, NewGroupPid}} ->
+	    From ! {self(), ok},
 	    loop_stopped(NewGroupPid, State) ;
-	{_From, start} ->
+	{From, start} ->
+	    From ! {self(), starting},
 	    loop_started(GroupPid, State)
     end.
 
@@ -84,35 +96,29 @@ loop_started(GroupPid, State) ->
 	    From ! {self(), pong},
 	    loop_stopped(GroupPid, State);
 	{From, upgrade} ->
-	    From ! {self(), ok},
+	    From ! {self(), upgrading},
 	    ?MODULE:init(GroupPid, State);
 	{From, getValue} ->
 	    case State of
 		{Value, _Min, _Max} -> % num
-		    From ! {self(), Value},
-		    loop_started(GroupPid, State);
+		    From ! {self(), Value};
 		Value -> % bin
-		    From ! {self(), Value},
-		    loop_started(GroupPid, State);
-		false ->
-		    From ! badArgument, % FIXME
-		    loop_started(GroupPid, State)
-	    end;
+		    From ! {self(), Value}
+	    end,
+	    loop_started(GroupPid, State);
 	{From, {setValue, NewValue}} ->
+	    From ! {self(), NewValue},
 	    case State of
 		{_Value, Min, Max} ->
+		    % TODO Percentual change notification function
+		    GroupPid ! {self(), NewValue},
 		    loop_started(GroupPid, {NewValue, Min, Max});
 		_Value ->
 		    GroupPid ! {self(), NewValue},
-		    loop_started(GroupPid, NewValue);
-		false ->
-		    From ! error, % FIXME
-		    loop_started(GroupPid, State)
+		    loop_started(GroupPid, NewValue)
 	    end
     after
 	?TIMEOUT ->
 	    GroupPid ! {self(), heartbeat},
 	    loop_started(GroupPid, State)
     end.
-
-% TODO Percentual change function
