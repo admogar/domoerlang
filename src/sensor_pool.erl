@@ -14,10 +14,9 @@
 %%%-------------------------------------------------------------------
 -module(sensor_pool).
 
+%% PUBLIC API
 -export([start/0]).
 -export([get_sensor/1]).
-
-%% PUBLIC API
 
 %%--------------------------------------------------------------------
 %% @doc Starts the sensor pool creation.
