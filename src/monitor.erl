@@ -78,7 +78,7 @@ loop_started(GroupPid, State) ->
 % {GroupPid, true}
 
 % {GroupPid, {Value, Min, Max}} *** Implicit type on Value
-% {GroupPid, 5, {0, 10}}
+% {GroupPid, {5, 0, 10}}
     receive
 	{From, ping} ->
 	    From ! {self(), pong},
@@ -109,7 +109,8 @@ loop_started(GroupPid, State) ->
 		    From ! error, % FIXME
 		    loop_started(GroupPid, State)
 	    end
-    after ?TIMEOUT ->
+    after
+	?TIMEOUT ->
 	    GroupPid ! {self(), heartbeat},
 	    loop_started(GroupPid, State)
     end.
