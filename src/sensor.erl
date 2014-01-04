@@ -44,8 +44,7 @@ loop(EstadoSensor) ->
         ?SENSOR_TIMEOUT ->
             RandNumber = random:uniform(2),
             if
-                RandNumber == 1 and is_function(EstadoSensor#estado.funcion_valor,0) ->
-                    EstadoSensor#estado.observador ! {valor, (EstadoSensor#estado.funcion_valor)() }
+                RandNumber == 1 -> EstadoSensor#estado.observador ! {valor, (EstadoSensor#estado.funcion_valor)() }
             end,
             loop(EstadoSensor)
     end.
