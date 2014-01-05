@@ -16,7 +16,7 @@
 
 %% PUBLIC API
 -define(VERSION, 1).
--export([start/1).
+-export([start/1]).
 
 %%--------------------------------------------------------------------
 %% @doc Starts the sensor.
