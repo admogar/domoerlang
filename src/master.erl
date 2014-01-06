@@ -18,7 +18,12 @@
 %% PUBLIC API
 -define(VERSION,1).
 -export([start/0, stop/0]).
--export([init/1]).
+
+-export([anadir_sensor/2, obtener_grupos/0, obtener_estado_grupo/1]).
+
+%%% Ver http://www.erlang.org/doc/reference_manual/records.html
+%%% Ver http://www.erlang.org/doc/programming_examples/records.html
+-record(infoGrupo, {nombre, sensores = [], pid_grupo}).
 
 %%--------------------------------------------------------------------
 %% @doc Starts the master.
@@ -44,19 +49,32 @@ stop() ->
 	    timeout
     end.
 
-%%--------------------------------------------------------------------
-%% @doc Inits or continues the master's execution.
-%% @end
-%%--------------------------------------------------------------------
-init(Monitors) ->
-    loop(Monitors).
+anadir_sensor(NombreGrupo, IdSensor) ->
+    ?MASTER ! {self(), {add, IdSensor, NombreGrupo}}.
+
+%% Devuelve una lista con los nombres de grupos o [error]
+obtener_grupos() ->
+    ?MASTER ! {self(), get_lista_grupos},
+    receive
+        {grupos, ListaNombreGrupos} -> ListaNombreGrupos
+    after
+        ?TIMEOUT ->
+            [error]
+    end.
+
+
+obtener_estado_grupo(NombreGrupo) ->
+    ?MASTER ! {self(), {get_estado_grupo, NombreGrupo}},
+    receive
+        {estado_grupo, ListaEstados} -> ListaEstados
+    end.
 
 %%% Internal Implementation
 
 init() ->
     register(?MASTER, self()),
     process_flag(trap_exit, true),
-    init([]).
+    loop(list:new()).
 
 %% {From, {add, Monitor}} - Anadir un monitor
 %% {From, list_monitors} - Lista de monitores en master
@@ -65,62 +83,60 @@ init() ->
 %% {From, upgrade} - Actualizar master en caliente
 %% {From, stop} - Parar master
 %% {'EXIT', Pid, Reason} - En caso de error en monitor, reinicio
-loop(Monitors) ->
+loop(Grupos) ->
     receive
-	{From, {add, Monitor}} ->
-	    {MonitorProc, NewMonitors} = getMonitor(Monitor, Monitors),
-						%io:format(" WTF? ~n"),
-	    From ! {?MASTER, MonitorProc},
-	    loop(NewMonitors);
-	{From, list_monitors} ->
-	    From ! {?MASTER, Monitors},
-	    loop(Monitors);
-	{From, {check, Monitor}} ->
-	    case lists:keyfind(Monitor, 1, Monitors) of
-		{Monitor, MonitorProc} ->
-		    %From ! {?MASTER, MonitorProc},
-		    MonitorProc ! {?MASTER, ping},
-		    receive
-			{MonitorProc, {pong, Value}} ->
-			    From ! {?MASTER, Value}
-		    after
-			?TIMEOUT ->
-			    timeout
-		    end;
-		false ->
-		    io:format("Monitor *~p* does not exist~n",[Monitor])
-	    end,
-	    loop(Monitors);
-	{From, version} ->
-	    From ! {?MASTER, ?VERSION},
-	    loop(Monitors);
-	{From, upgrade} ->
-	    From ! {?MASTER, upgrading},
-            %TODO: PROPAGAR UPGRADE A LISTA
-	    ?MODULE:init(Monitors);
-	{From, stop} ->
-	    From ! {?MASTER, stopping};
-	{'EXIT', Pid, Reason} -> 
-	    io:format("Got exit signal from ~p: ~p~n", [Pid,Reason]),
-	    {Monitor, MonitorProc} = lists:keyfind(Pid, 2, Monitors),
-	    TempMons = lists:keydelete(Pid, 2, Monitors),
-	    io:format("Error in monitor ~p with process ~p~n", [Monitor,MonitorProc]),
-	    {_MonitorNewProc, NewMonitors} = getMonitor(Monitor, TempMons),
-	    io:format("Monitor restarted!~n"),
-	    simple_smtp_sender:send(?ADMIN_MAIL, ?DOMOERL_MAIL, "Fallo en domoerlang", io_lib:format("<!DOCTYPE html><html><body>El proceso ~p encargado de <strong>~p</strong> se ha petado debido a <strong>~p</strong> y ha habido que reiniciarlo.~n <p></p><img src=\"http://galeri3.uludagsozluk.com/138/facepalm_227785.jpg\" alt=\"Facepalm\"></body></html>", [Pid, Monitor, Reason]),  ?SMTP_SERV, ?SMTP_PORT),
-	    loop(NewMonitors);
-	Msg ->
-	    io:format("[~p] WTF? ~p~n", [?MODULE, Msg]),
-	    loop(Monitors)
+    	{_From, {add, IdSensor, NombreGrupo}} ->
+            % getGrupo() crea y añade el grupo en caso de no existir
+            {InfoGrupo, NuevoGrupos} = getGrupo(NombreGrupo, Grupos),
+            grupo:anadir_sensor(InfoGrupo#infoGrupo.pid_grupo, IdSensor),
+    	    loop(NuevoGrupos) ;
+
+        {From, get_lista_grupos} ->
+            From ! {grupos, [ InfoGrupo#infoGrupo.nombre || InfoGrupo <- Grupos]},
+            loop(Grupos) ;
+        
+        {From, get_estado_grupo, NombreGrupo} ->
+            #infoGrupo{pid_grupo=PidGrupo} = getGrupo(NombreGrupo, Grupos),
+            From ! {estado_grupo, grupo:obtener_estado(PidGrupo)},
+            loop(Grupos) ;
+        
+        {From, version} ->
+    	    From ! {?MASTER, ?VERSION},
+    	    loop(Grupos);
+    	
+        {From, upgrade} ->
+    	    From ! {?MASTER, upgrading},
+                %TODO: PROPAGAR UPGRADE A LISTA
+    	    ?MODULE:loop(Grupos) ;
+    	
+        {From, stop} ->
+    	    From ! {?MASTER, stopping};
+    	
+        {'EXIT', Pid, Reason} -> 
+    	    io:format("Got exit signal from ~p: ~p~n", [Pid,Reason]),
+    	    InfoGrupo = lists:keyfind(Pid, Grupos#infoGrupo.pid_grupo, Grupos),
+    	    GruposActualizados= lists:keydelete(Pid, Grupos#infoGrupo.pid_grupo, Grupos),
+    	    io:format("Error in group ~p with process ~p y sensore ~p ~n", [InfoGrupo#infoGrupo.nombre, InfoGrupo#infoGrupo.pid_grupo, InfoGrupo#infoGrupo.sensores]),
+    	    simple_smtp_sender:send(?ADMIN_MAIL, ?DOMOERL_MAIL, "Fallo en domoerlang",
+                io_lib:format("<!DOCTYPE html><html><body>El proceso ~p encargado de <strong>~p</strong> se ha petado debido a <strong>~p</strong> y ha habido que reiniciarlo.~n
+                               <p></p><img src=\"http://galeri3.uludagsozluk.com/138/facepalm_227785.jpg\" alt=\"Facepalm\"></body></html>",
+                               [InfoGrupo#infoGrupo.pid_grupo, InfoGrupo#infoGrupo.nombre, Reason]),  ?SMTP_SERV, ?SMTP_PORT),
+    	    loop(GruposActualizados);
+    	
+        Msg ->
+    	    io:format("[~p] WTF? ~p~n", [?MODULE, Msg]),
+    	    loop(Grupos)
     end.
 
 
-%% Creacion de monitor, en caso de que exista no creamos uno nuevo
-getMonitor(Monitor, Monitors) ->
-    case lists:keyfind(Monitor, 1, Monitors) of
-	{Monitor, MonitorProc} ->
-	    {MonitorProc, Monitors};
-	false ->
-	    NewMonitor = monitor:start_link(),
-	    {NewMonitor, [{Monitor,NewMonitor} | Monitors]}
+%% Devuelve el grupo indicado por NombreGrupo de la lista de grupos y en caso de no existir lo crea
+%% salida: {InfoGrupo, Grupos}
+getGrupo(NombreGrupo, Grupos) ->
+    case lists:keyfind(NombreGrupo, #infoGrupo.nombre, Grupos) of
+        InfoGrupo when is_record(InfoGrupo, infoGrupo) ->
+            {InfoGrupo, Grupos}
+
+        ; false ->
+            NuevoGrupo = grupo:crear_y_enlazar(),
+            { NuevoGrupo, [#infoGrupo{nombre=NombreGrupo, pid_grupo=NuevoGrupo} | Grupos] }
     end.

@@ -34,6 +34,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 -module(grupo).
+-include("client.hrl").
 
 %% ====================================================================
 %% API functions
@@ -52,7 +53,7 @@ crear() ->
 crear_y_enlazar() ->
     spawn_link(?MODULE, fun() -> init() end, []).
     
-%%% añadir
+%%% anadir_sensor(PidGrupo : pid(), IdSensor: string())
 anadir_sensor(PidGrupo, IdSensor) ->
     PidGrupo ! {self(), {anadir, IdSensor}}.
 
@@ -62,14 +63,18 @@ anadir_sensor(PidGrupo, IdSensor) ->
 % valor en cache: depende del sensor
 % tiempo desde el último heartbeat: segundos
 obtener_estado(PidGrupo) ->
-    PidGrupo ! {self(), {obtenerEstado}}.
+    PidGrupo ! {self(), {obtenerEstado}},
+    receive
+        {info_grupo, ListaEstados} -> ListaEstados
+    after
+        ?TIMEOUT -> [error]
+    end.
 
 
 %% ====================================================================
 %% Internal functions
 %% ====================================================================
 
-% Ver documentación sobre conjuntos (módulo 'sets'): http://www.erlang.org/doc/man/sets.html
 %%% Ver http://www.erlang.org/doc/reference_manual/records.html
 %%% Ver http://www.erlang.org/doc/programming_examples/records.html
 
@@ -77,7 +82,7 @@ init() ->
     process_flag(trap_exit, true),
     loop(lists:new()). % Lista vacía de monitores
 
-% Monitores :: set(PidMonitor,...)
+% Monitores :: list(#infoMonitor, #infoMonitor, ...)
 loop(Monitores) ->
     receive
 
@@ -91,7 +96,7 @@ loop(Monitores) ->
                     NuevoMonitor = #infoMonitor{pid_monitor=monitor:start_link(self(), IdSensor),
                                                 nombre_sensor=IdSensor,
                                                 heartbeat_timestamp=os:timestamp()},
-                    NuevosMonitores = ordsets:add_element(NuevoMonitor, Monitores),
+                    NuevosMonitores = [NuevoMonitor| Monitores],
                     monitor:configurar_padre(NuevoMonitor#infoMonitor.pid_monitor, self()), % Monitor notificará a este grupo (self)
 
                     loop(NuevosMonitores)
