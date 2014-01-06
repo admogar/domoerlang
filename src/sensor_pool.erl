@@ -37,7 +37,7 @@ start() ->
 get_sensor(SensorName) ->
     ?MODULE ! {self(), getSensor, SensorName},
     receive
-        Sensor -> Sensor
+        PidSensor -> PidSensor
     end.
 
 %%% Internal implementation %%%
@@ -52,16 +52,18 @@ loop(SensorList) ->
             case lists:keyfind(SensorName, 1, SensorList) of
                 {SensorName, SensorType, PidSensor} ->
                     From ! {SensorType, PidSensor};
-		false ->
-		    From ! null
+        		
+                false ->
+                    From ! null
             end,
             loop(SensorList);
-	_ ->
-	    loop(SensorList)
+    	
+        _ ->
+    	    loop(SensorList)
     end.
 
 sensor_load() ->
     [
         [luz, bin, sensor:start(bin)],
-        [temperatura, num, sensor:start(num)]
+        [temperatura, num, sensor:start({num,0,100})]
     ].

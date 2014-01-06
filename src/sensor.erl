@@ -30,31 +30,46 @@ start(Type) ->
 
 %%% Internal Implementation
 
-init(State) ->
-    case State of
-	{num, Min, Max} ->
-	    initializing({Min, Min, Max});
-	bin ->
-	    initializing(false)
+
+init(Type) ->
+    random:seed(erlang:now()),
+    case Type of
+    	{num, Min, Max} ->
+    	    loop({Min, Min, Max}, observador_indefinido) ;
+        
+    	bin ->
+    	    loop({binario,false}, observador_indefinido) ;
+
+        _ ->
+            io:format("Error, valor de tipo desconocido: ~p", Type),
+            throw(tipo_desconocido)
     end.
 
-initializing(State) ->
-    receive
-	{From, setObserver} ->
-	    From ! {self(), initialized},
-	    loop(State, From)
-    end.
+
 
 loop(State, MonitorPID) ->
-    timer:sleep(?TIMEOUT),
-    random:seed(erlang:now()),
-    case State of
-	{_Value, Min, Max} ->
-	    NewValue = Min+random:uniform(Max+1-Min)-1,
-	    NewState = {NewValue, Min, Max};
-	_Value ->
-	    NewValue = (random:uniform(2) == 1),
-	    NewState = NewValue
-    end,
-    MonitorPID ! {self(), NewValue},
-    loop(NewState, MonitorPID).
+    receive
+        {FromMonitor, setObserver} ->
+            FromMonitor ! {sensor_initialized},
+            loop(State, FromMonitor)
+    
+    after ?TIMEOUT ->
+        case State of    
+        
+            {_Value, Min, Max} ->
+        	    NewValue = Min+random:uniform(Max+1-Min)-1,
+                MonitorPID ! {valor, NewValue},
+        	    NewState = {NewValue, Min, Max},
+                loop(NewState, MonitorPID) ;
+        
+            {binario, _Value} ->
+        	    NewValue = (random:uniform(2) == 1),
+                MonitorPID ! {valor, NewValue} ,
+                NewState = {binario, NewValue},
+                loop(NewState, MonitorPID) ;
+            
+            _ -> 
+                 io:format("Error, valor de estado desconocido: ~p", State),
+                 throw(valor_inesperado)
+        end
+    end.
