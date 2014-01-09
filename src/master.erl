@@ -74,7 +74,7 @@ obtener_estado_grupo(NombreGrupo) ->
 init() ->
     register(?MASTER, self()),
     process_flag(trap_exit, true),
-    loop(list:new()).
+    loop([]).
 
 %% {From, {add, Monitor}} - Anadir un monitor
 %% {From, list_monitors} - Lista de monitores en master
