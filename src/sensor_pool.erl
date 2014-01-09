@@ -64,6 +64,6 @@ loop(SensorList) ->
 
 sensor_load() ->
     [
-        [luz, bin, sensor:start(bin)],
-        [temperatura, num, sensor:start({num,0,100})]
+        ["luz", bin, sensor:start(bin)],
+        ["temperatura", num, sensor:start({num,0,100})]
     ].

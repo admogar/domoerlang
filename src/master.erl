@@ -69,9 +69,12 @@ obtener_grupos() ->
 
 
 obtener_estado_grupo(NombreGrupo) ->
-    ?MASTER ! {self(), {get_estado_grupo, NombreGrupo}},
+    ?MASTER ! {self(), get_estado_grupo, NombreGrupo},
     receive
         {estado_grupo, ListaEstados} -> ListaEstados
+    after
+        ?TIMEOUT ->
+            timeout
     end.
 
 %%% Internal Implementation
@@ -101,7 +104,7 @@ loop(Grupos) ->
             loop(Grupos) ;
         
         {From, get_estado_grupo, NombreGrupo} ->
-            #infoGrupo{pid_grupo=PidGrupo} = getGrupo(NombreGrupo, Grupos),
+            {#infoGrupo{pid_grupo=PidGrupo}, Grupos} = getGrupo(NombreGrupo, Grupos),
             From ! {estado_grupo, grupo:obtener_estado(PidGrupo)},
             loop(Grupos) ;
         
@@ -120,12 +123,12 @@ loop(Grupos) ->
     	
         {'EXIT', Pid, Reason} -> 
     	    io:format("Got exit signal from ~p: ~p~n", [Pid,Reason]),
-    	    InfoGrupo = lists:keyfind(Pid, Grupos#infoGrupo.pid_grupo, Grupos),
-    	    GruposActualizados= lists:keydelete(Pid, Grupos#infoGrupo.pid_grupo, Grupos),
-    	    io:format("Error in group ~p with process ~p y sensore ~p ~n", [InfoGrupo#infoGrupo.nombre, InfoGrupo#infoGrupo.pid_grupo, InfoGrupo#infoGrupo.sensores]),
+    	    InfoGrupo = lists:keyfind(Pid, #infoGrupo.pid_grupo, Grupos),
+    	    GruposActualizados= lists:keydelete(Pid, #infoGrupo.pid_grupo, Grupos),
+    	    io:format("Error in group ~p with process ~p y sensores ~p ~n", [InfoGrupo#infoGrupo.nombre, InfoGrupo#infoGrupo.pid_grupo, InfoGrupo#infoGrupo.sensores]),
     	    simple_smtp_sender:send(?ADMIN_MAIL, ?DOMOERL_MAIL, "Fallo en domoerlang",
                 io_lib:format("<!DOCTYPE html><html><body>El proceso ~p encargado de <strong>~p</strong> se ha petado debido a <strong>~p</strong> y ha habido que reiniciarlo.~n
-                               <p></p><img src=\"http://galeri3.uludagsozluk.com/138/facepalm_227785.jpg\" alt=\"Facepalm\"></body></html>",
+                               <p><img src=\"http://galeri3.uludagsozluk.com/138/facepalm_227785.jpg\" alt=\"Facepalm\"></p></body></html>",
                                [InfoGrupo#infoGrupo.pid_grupo, InfoGrupo#infoGrupo.nombre, Reason]),  ?SMTP_SERV, ?SMTP_PORT),
     	    loop(GruposActualizados);
     	
@@ -143,6 +146,7 @@ getGrupo(NombreGrupo, Grupos) ->
             {InfoGrupo, Grupos}
 
         ; false ->
-            NuevoGrupo = grupo:crear_y_enlazar(),
-            { NuevoGrupo, [#infoGrupo{nombre=NombreGrupo, pid_grupo=NuevoGrupo} | Grupos] }
+            PidNuevoGrupo = grupo:crear_y_enlazar(self()), % Se le pasa al constructor el pid del master
+            NuevoGrupo = #infoGrupo{nombre=NombreGrupo, pid_grupo=PidNuevoGrupo},
+            { NuevoGrupo, [NuevoGrupo | Grupos] }
     end.

@@ -103,10 +103,10 @@ loop_started(GroupPid, PidSensor, SensorType, Value) ->
         {valor, NewValue} ->
             case SensorType of
                 {num,_,_} ->
-                    if NewValue - Value > 70 -> GroupPid ! {self(), {heartbeat, NewValue}} end ;
+                    if NewValue - Value > 70 -> GroupPid ! {self(), heartbeat, NewValue} end ;
                     
                 bin ->
-                    if NewValue /= Value -> GroupPid ! {self(), {heartbeat, NewValue}} end
+                    if NewValue /= Value -> GroupPid ! {self(), heartbeat, NewValue} end
             end,
             loop_started(GroupPid, PidSensor, SensorType, NewValue) ;
 

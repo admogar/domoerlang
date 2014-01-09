@@ -39,19 +39,19 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([crear/0, crear_y_enlazar/0]).
+-export([crear/1, crear_y_enlazar/1]).
 
 -export([anadir_sensor/2, obtener_estado/1]).
 
 -record(infoMonitor, {pid_monitor, nombre_sensor, cache_valor, heartbeat_timestamp}).
 
-%%% crear(): pid()
-crear() ->
-    spawn(?MODULE, fun() -> init() end, []).
+%%% crear(PidMaster): pid()
+crear(PidMaster) ->
+    spawn(fun() -> init(PidMaster) end).
 
-%%% crear_y_enlazar(): pid()
-crear_y_enlazar() ->
-    spawn_link(?MODULE, fun() -> init() end, []).
+%%% crear_y_enlazar(PidMaster): pid()
+crear_y_enlazar(PidMaster) ->
+    spawn_link(fun() -> init(PidMaster) end).
     
 %%% anadir_sensor(PidGrupo : pid(), IdSensor: string())
 anadir_sensor(PidGrupo, IdSensor) ->
@@ -63,7 +63,7 @@ anadir_sensor(PidGrupo, IdSensor) ->
 % valor en cache: depende del sensor
 % tiempo desde el último heartbeat: segundos
 obtener_estado(PidGrupo) ->
-    PidGrupo ! {self(), {obtenerEstado}},
+    PidGrupo ! {self(), obtenerEstado},
     receive
         {info_grupo, ListaEstados} -> ListaEstados
     after
@@ -78,19 +78,19 @@ obtener_estado(PidGrupo) ->
 %%% Ver http://www.erlang.org/doc/reference_manual/records.html
 %%% Ver http://www.erlang.org/doc/programming_examples/records.html
 
-init() ->
+init(PidMaster) ->
     process_flag(trap_exit, true),
-    loop(lists:new()). % Lista vacía de monitores
+    loop([], PidMaster). % Lista vacía de monitores y el pid del master
 
 % Monitores :: list(#infoMonitor, #infoMonitor, ...)
-loop(Monitores) ->
+loop(Monitores, PidMaster) ->
     receive
 
         {_From, {anadir, IdSensor}} ->
             % Si ya contenemos el sensor, ignoramos
             case lists:keyfind(IdSensor, #infoMonitor.nombre_sensor, Monitores) of
                 InfoMonitor when is_record(InfoMonitor, infoMonitor) ->
-                    loop(Monitores)
+                    loop(Monitores, PidMaster)
                 ; false ->
                     % Si no contenemos el monitor lo añadimos y configuramos
                     NuevoMonitor = #infoMonitor{pid_monitor=monitor:start_link(self(), IdSensor),
@@ -99,28 +99,33 @@ loop(Monitores) ->
                     NuevosMonitores = [NuevoMonitor| Monitores],
                     monitor:configurar_padre(NuevoMonitor#infoMonitor.pid_monitor, self()), % Monitor notificará a este grupo (self)
 
-                    loop(NuevosMonitores)
+                    loop(NuevosMonitores, PidMaster)
             end
 
         ; {PidMonitor, heartbeat} ->  % Sustituimos el último timestamp de heartbeat por el nuevo
             EstadoMonitorAntiguo = lists:keyfind(PidMonitor, #infoMonitor.pid_monitor, Monitores),
             NuevoEstadoMonitor = EstadoMonitorAntiguo#infoMonitor{heartbeat_timestamp=os:timestamp()},
-            loop(lists:keyreplace(PidMonitor, #infoMonitor.pid_monitor, Monitores, NuevoEstadoMonitor))
+            loop(lists:keyreplace(PidMonitor, #infoMonitor.pid_monitor, Monitores, NuevoEstadoMonitor), PidMaster)
        
-        ; {PidMonitor, {heartbeat, Valor}} -> % Heartbeat con nuevo valor
+        ; {PidMonitor, heartbeat, Valor} -> % Heartbeat con nuevo valor
             EstadoMonitorAntiguo = lists:keyfind(PidMonitor, #infoMonitor.pid_monitor, Monitores),
             NuevoEstadoMonitor = EstadoMonitorAntiguo#infoMonitor{heartbeat_timestamp=os:timestamp(),
                                                                   cache_valor=Valor},
-            loop(lists:keyreplace(PidMonitor, #infoMonitor.pid_monitor, Monitores, NuevoEstadoMonitor))         
+            loop(lists:keyreplace(PidMonitor, #infoMonitor.pid_monitor, Monitores, NuevoEstadoMonitor), PidMaster)
     
         ; {From, obtenerEstado} ->
             TimestampAhora=os:timestamp(),
-            From ! {info_grupo, [[EstadoMonitor#infoMonitor.nombre_sensor,
+            From ! {info_grupo, [{EstadoMonitor#infoMonitor.nombre_sensor,
                                   EstadoMonitor#infoMonitor.cache_valor,
-                                  diferencia_segundos(EstadoMonitor#infoMonitor.heartbeat_timestamp, TimestampAhora)] || EstadoMonitor <- Monitores]
-                   }
+                                  diferencia_segundos(EstadoMonitor#infoMonitor.heartbeat_timestamp, TimestampAhora)} || EstadoMonitor <- Monitores]
+                   },
+            loop(Monitores, PidMaster)
     
-        ; _ -> false
+        ; {'EXIT', PidMaster, _Reason} -> fin_de_master % Finalizamos la ejecución de grupo porque el master ha finalizado
+    
+        ; MensajeInesperado ->
+            io:format("Mensaje inesperado: ~p~n", [MensajeInesperado]),
+            loop(Monitores, PidMaster)
     end.
 
 diferencia_segundos(EstadoMonitor, TimestampAhora) ->
