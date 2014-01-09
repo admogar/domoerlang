@@ -31,8 +31,13 @@
 %% @end
 %%--------------------------------------------------------------------
 start() ->
-    spawn(fun() -> init() end),
-    ok.
+    PidMaster = whereis(?MASTER),
+    if
+        PidMaster/=undefined ->
+            throw({error, master_already_running})
+      ; true ->
+            spawn(fun() -> init() end)
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc Stops the master.

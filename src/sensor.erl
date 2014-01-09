@@ -53,23 +53,26 @@ loop(State, MonitorPID) ->
             FromMonitor ! {sensor_initialized},
             loop(State, FromMonitor)
     
-    after ?TIMEOUT ->
-        case State of    
-        
-            {_Value, Min, Max} ->
-        	    NewValue = Min+random:uniform(Max+1-Min)-1,
-                MonitorPID ! {valor, NewValue},
-        	    NewState = {NewValue, Min, Max},
-                loop(NewState, MonitorPID) ;
-        
-            {binario, _Value} ->
-        	    NewValue = (random:uniform(2) == 1),
-                MonitorPID ! {valor, NewValue} ,
-                NewState = {binario, NewValue},
-                loop(NewState, MonitorPID) ;
+    after ?TIMEOUT->
+        if MonitorPID/=observador_indefinido ->
+            case State of    
             
-            _ -> 
-                 io:format("Error, valor de estado desconocido: ~p", State),
-                 throw(valor_inesperado)
-        end
+                {_Value, Min, Max} ->
+            	    NewValue = Min+random:uniform(Max+1-Min)-1,
+                    MonitorPID ! {valor, NewValue},
+            	    NewState = {NewValue, Min, Max},
+                    loop(NewState, MonitorPID) ;
+            
+                {binario, _Value} ->
+            	    NewValue = (random:uniform(2) == 1),
+                    MonitorPID ! {valor, NewValue} ,
+                    NewState = {binario, NewValue},
+                    loop(NewState, MonitorPID) ;
+                
+                _ -> 
+                     io:format("Error, valor de estado desconocido: ~p", State),
+                     throw(valor_inesperado)
+            end
+        end,
+        loop(State, MonitorPID)
     end.

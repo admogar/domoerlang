@@ -24,13 +24,8 @@
 %% @end
 %%--------------------------------------------------------------------
 start() ->
-    case lists:filter(fun(X) -> X==master end, registered()) of
-          [] ->
-            ?MASTER:start(),
-            ok
-        ; _HasElements ->
-            throw({error, master_already_running})
-    end.
+    ?MASTER:start(),
+    ok.
 
 %%--------------------------------------------------------------------
 %% @doc Commands the master to stop.
