@@ -40,7 +40,7 @@ start() ->
 %% @end
 %%--------------------------------------------------------------------
 stop() ->
-    ?MASTER ! {self(), {stop}},
+    ?MASTER ! {self(), stop},
     receive
 	{?MASTER, stopping} ->
 	    ok
@@ -110,6 +110,7 @@ loop(Grupos) ->
     	    ?MODULE:loop(Grupos) ;
     	
         {From, stop} ->
+            unregister(?MASTER),
     	    From ! {?MASTER, stopping};
     	
         {'EXIT', Pid, Reason} -> 
