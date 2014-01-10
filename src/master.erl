@@ -19,7 +19,8 @@
 -define(VERSION,1).
 -export([start/0, stop/0]).
 
--export([anadir_sensor/2, obtener_grupos/0, obtener_estado_grupo/1, upgrade/0, version/0, ping/1]).
+-export([anadir_sensor/2, obtener_grupos/0, obtener_estado_grupo/1, obtener_valor_sensor/2]).
+-export([upgrade/0, version/0, ping/1]).
 
 %%% Ver http://erlang.org/doc/man/global.html
 %%% Ver http://www.erlang.org/doc/reference_manual/records.html
@@ -83,7 +84,18 @@ obtener_estado_grupo(NombreGrupo) ->
         ?TIMEOUT ->
             timeout
     end.
-    
+
+obtener_valor_sensor(NombreGrupo, NombreSensor) ->
+    get_master_pid() ! {self(), get_valor_sensor, NombreGrupo, NombreSensor},
+    receive
+        {valor_sensor, Valor} -> Valor
+      ; {error, grupo_inexistente} -> {error, grupo_inexistente}
+      ; {error, sensor_inexistente} -> {error, sensor_inexistente}
+    after
+        ?TIMEOUT ->
+            timeout
+    end.
+
 upgrade() ->
     get_master_pid() ! {self(), upgrade},
     receive
@@ -142,7 +154,23 @@ loop(Grupos) ->
             {#infoGrupo{pid_grupo=PidGrupo}, Grupos} = getGrupo(NombreGrupo, Grupos),
             From ! {estado_grupo, grupo:obtener_estado(PidGrupo)},
             loop(Grupos) ;
-            
+
+        {From, get_valor_sensor, NombreGrupo, NombreSensor} ->
+            case existe_grupo(NombreGrupo, Grupos) of
+                false ->
+                    From ! {error, grupo_inexistente},
+                    loop(Grupos)
+              ; true ->
+                    {#infoGrupo{pid_grupo=PidGrupo}, Grupos} = getGrupo(NombreGrupo, Grupos),
+                    grupo:obtener_valor_sensor(PidGrupo, NombreSensor),
+                    receive
+                        ValorOrError -> From ! ValorOrError
+                    after ?TIMEOUT ->
+                        From ! {error}
+                    end,
+                    loop(Grupos)
+            end ;
+        
         {From, ping, NombreGrupo} ->
             {#infoGrupo{pid_grupo=PidGrupo}, Grupos} = getGrupo(NombreGrupo, Grupos),
             From ! {?MASTER, grupo:ping(PidGrupo)},
@@ -161,7 +189,7 @@ loop(Grupos) ->
     	    ?MODULE:loop(Grupos);
     	
         {From, stop} ->
-            unregister(?MASTER),
+            global:unregister_name(?MASTER),
     	    From ! {?MASTER, stopping};
     	
         {'EXIT', Pid, Reason} -> 
@@ -180,6 +208,14 @@ loop(Grupos) ->
     	    loop(Grupos)
     end.
 
+
+%% Indica si un grupo existe o no, sin crearlo.
+%% existe_grupo(NombreGrupo, Grupos) -> boolean()
+existe_grupo(NombreGrupo, Grupos) ->
+    case lists:keyfind(NombreGrupo, #infoGrupo.nombre, Grupos) of
+        false -> false
+      ; _ -> true
+    end.
 
 %% Devuelve el grupo indicado por NombreGrupo de la lista de grupos y en caso de no existir lo crea
 %% salida: {InfoGrupo, Grupos}

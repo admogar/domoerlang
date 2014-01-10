@@ -41,7 +41,7 @@
 %% ====================================================================
 -export([crear/1, crear_y_enlazar/1]).
 
--export([anadir_sensor/2, obtener_estado/1, ping/1]).
+-export([anadir_sensor/2, obtener_estado/1, obtener_valor_sensor/2, ping/1]).
 
 -record(infoMonitor, {pid_monitor, nombre_sensor, cache_valor, heartbeat_timestamp}).
 
@@ -67,15 +67,21 @@ obtener_estado(PidGrupo) ->
     receive
         {info_grupo, ListaEstados} -> ListaEstados
     after
-        ?TIMEOUT -> [error]
+        ?TIMEOUT -> {error}
     end.
-    
+
+obtener_valor_sensor(PidGrupo, NombreSensor) ->
+    PidGrupo ! {self(), obtener_valor_sensor, NombreSensor},
+    receive ValorOrError -> ValorOrError
+    after ?TIMEOUT -> {error}
+    end.
+
 ping(PidGrupo) ->
     PidGrupo ! {self(), ping},
     receive
         {PidGrupo, pong} -> pong
     after
-        ?TIMEOUT -> [error]
+        ?TIMEOUT -> {error}
     end.
 
 
@@ -130,6 +136,15 @@ loop(Monitores, PidMaster) ->
                                   EstadoMonitor#infoMonitor.cache_valor,
                                   diferencia_segundos(EstadoMonitor#infoMonitor.heartbeat_timestamp, TimestampAhora)} || EstadoMonitor <- Monitores]
                    },
+            loop(Monitores, PidMaster)
+
+        ; {From, obtener_valor_sensor, NombreSensor} ->
+            case lists:keyfind(NombreSensor, #infoMonitor.nombre_sensor, Monitores) of
+                false ->
+                    From ! {error, sensor_inexistente}
+              ; InfoMonitor ->
+                    From ! {valor_sensor, InfoMonitor#infoMonitor.cache_valor}
+            end,
             loop(Monitores, PidMaster)
     
         ; {'EXIT', PidMaster, _Reason} -> fin_de_master % Finalizamos la ejecución de grupo porque el master ha finalizado

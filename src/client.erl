@@ -15,7 +15,7 @@
 
 %% PUBLIC API
 -export([start/0, stop/0]).
--export([add/2, listGroups/0, checkGroup/1, ping/1]).
+-export([add/2, listGroups/0, checkGroup/1, ping/1, getSensorValue/2]).
 -export([upgrade/0, version/0]).
 
 %%--------------------------------------------------------------------
@@ -66,6 +66,11 @@ listGroups() ->
 checkGroup(NombreGrupo) ->
     master:obtener_estado_grupo(NombreGrupo).
     
+
+getSensorValue(NombreGrupo, NombreSensor) ->
+    master:obtener_valor_sensor(NombreGrupo, NombreSensor).
+
+
 %%--------------------------------------------------------------------
 %% @doc Updates the server to the last compiled version.
 %% @spec upgrade(MasterNode :: node()) -> ok | timeout
