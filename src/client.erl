@@ -14,9 +14,9 @@
 -include("client.hrl").
 
 %% PUBLIC API
--export([start/0, stop/1]).
--export([add/3, listGroups/1, checkGroup/2, ping/2]).
--export([upgrade/1, version/1]).
+-export([start/0, stop/0]).
+-export([add/2, listGroups/0, checkGroup/1, ping/1]).
+-export([upgrade/0, version/0]).
 
 %%--------------------------------------------------------------------
 %% @doc Commands the master to start.
@@ -34,8 +34,8 @@ start() ->
 %%                     timeout 
 %% @end
 %%--------------------------------------------------------------------
-stop(MasterNode) ->
-    master:stop(MasterNode),
+stop() ->
+    master:stop(),
     ok.
 
 %%--------------------------------------------------------------------
@@ -44,8 +44,8 @@ stop(MasterNode) ->
 %%           void
 %% @end
 %%--------------------------------------------------------------------
-add(NombreGrupo, IdSensor, MasterNode) ->
-    master:anadir_sensor(NombreGrupo, IdSensor, MasterNode),
+add(NombreGrupo, IdSensor) ->
+    master:anadir_sensor(NombreGrupo, IdSensor),
     ok.
     
 %%--------------------------------------------------------------------
@@ -54,8 +54,8 @@ add(NombreGrupo, IdSensor, MasterNode) ->
 %%                    list(string()) | timeout
 %% @end
 %%--------------------------------------------------------------------
-listGroups(MasterNode) ->
-    master:obtener_grupos(MasterNode).
+listGroups() ->
+    master:obtener_grupos().
     
 %%--------------------------------------------------------------------
 %% @doc Checks state of a group.
@@ -63,16 +63,16 @@ listGroups(MasterNode) ->
 %%                    Value :: list() | timeout
 %% @end
 %%--------------------------------------------------------------------
-checkGroup(NombreGrupo, MasterNode) ->
-    master:obtener_estado_grupo(NombreGrupo, MasterNode).
+checkGroup(NombreGrupo) ->
+    master:obtener_estado_grupo(NombreGrupo).
     
 %%--------------------------------------------------------------------
 %% @doc Updates the server to the last compiled version.
 %% @spec upgrade(MasterNode :: node()) -> ok | timeout
 %% @end
 %%--------------------------------------------------------------------
-upgrade(MasterNode) ->
-    master:upgrade(MasterNode).
+upgrade() ->
+    master:upgrade().
 
 %%--------------------------------------------------------------------
 %% @doc Prints the version on execution.
@@ -81,8 +81,8 @@ upgrade(MasterNode) ->
 %%               timeout
 %% @end
 %%--------------------------------------------------------------------
-version(MasterNode) ->
-    master:version(MasterNode).
+version() ->
+    master:version().
     
 %%--------------------------------------------------------------------
 %% @doc Pings the specified group.
@@ -91,7 +91,7 @@ version(MasterNode) ->
 %%               timeout
 %% @end
 %%--------------------------------------------------------------------
-ping(NombreGrupo, MasterNode) ->
-    timer:tc(master, ping, [NombreGrupo, MasterNode]).
+ping(NombreGrupo) ->
+    timer:tc(master, ping, [NombreGrupo]).
     
 %%% Internal Implementation

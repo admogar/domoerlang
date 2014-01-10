@@ -17,11 +17,11 @@
 
 %% PUBLIC API
 -define(VERSION,1).
--export([start/0, stop/1]).
+-export([start/0, stop/0]).
 
--export([anadir_sensor/3, obtener_grupos/1, obtener_estado_grupo/2, upgrade/1, version/1, ping/2]).
+-export([anadir_sensor/2, obtener_grupos/0, obtener_estado_grupo/1, upgrade/0, version/0, ping/1]).
 
--export([loop/1]).
+%%% Ver http://erlang.org/doc/man/global.html
 %%% Ver http://www.erlang.org/doc/reference_manual/records.html
 %%% Ver http://www.erlang.org/doc/programming_examples/records.html
 -record(infoGrupo, {nombre, sensores = [], pid_grupo}).
@@ -32,12 +32,18 @@
 %% @end
 %%--------------------------------------------------------------------
 start() ->
-    PidMaster = whereis(?MASTER),
-    if
-        PidMaster/=undefined ->
-            throw({error, master_already_running})
-      ; true ->
+    case global:whereis_name(?MASTER) of
+        undefined ->
             spawn(fun() -> init() end)
+      ; _PidMaster ->
+            throw({error, master_already_running})
+    end.
+
+get_master_pid() ->
+    case global:whereis_name(?MASTER) of
+        undefined ->
+            throw({error, master_not_running})
+      ; PidMaster -> PidMaster
     end.
 
 %%--------------------------------------------------------------------
@@ -45,8 +51,8 @@ start() ->
 %% @spec stop() -> ok | timeout
 %% @end
 %%--------------------------------------------------------------------
-stop(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), stop},
+stop() ->
+    get_master_pid() ! {self(), stop},
     receive
 	{?MASTER, stopping} ->
 	    ok
@@ -55,12 +61,12 @@ stop(MasterNode) ->
 	    timeout
     end.
 
-anadir_sensor(NombreGrupo, IdSensor, MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), {add, IdSensor, NombreGrupo}}.
+anadir_sensor(NombreGrupo, IdSensor) ->
+    get_master_pid() ! {self(), {add, IdSensor, NombreGrupo}}.
 
 %% Devuelve una lista con los nombres de grupos o [error]
-obtener_grupos(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), get_lista_grupos},
+obtener_grupos() ->
+    get_master_pid() ! {self(), get_lista_grupos},
     receive
         {grupos, ListaNombreGrupos} -> ListaNombreGrupos
     after
@@ -69,8 +75,8 @@ obtener_grupos(MasterNode) ->
     end.
 
 
-obtener_estado_grupo(NombreGrupo, MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), get_estado_grupo, NombreGrupo},
+obtener_estado_grupo(NombreGrupo) ->
+    get_master_pid() ! {self(), get_estado_grupo, NombreGrupo},
     receive
         {estado_grupo, ListaEstados} -> ListaEstados
     after
@@ -78,8 +84,8 @@ obtener_estado_grupo(NombreGrupo, MasterNode) ->
             timeout
     end.
     
-upgrade(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), upgrade},
+upgrade() ->
+    get_master_pid() ! {self(), upgrade},
     receive
     {?MASTER, upgrading} ->
       ok
@@ -88,8 +94,8 @@ upgrade(MasterNode) ->
       timeout
     end.
 
-version(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), version},
+version() ->
+    get_master_pid() ! {self(), version},
     receive
     {?MASTER, Version} ->
       Version
@@ -98,8 +104,8 @@ version(MasterNode) ->
       timeout
     end.
     
-ping(NombreGrupo, MasterNode) -> 
-    {?MASTER, MasterNode} ! {self(), ping, NombreGrupo},
+ping(NombreGrupo) -> 
+    get_master_pid() ! {self(), ping, NombreGrupo},
     receive
         {?MASTER, pong} -> pong
     after
@@ -109,7 +115,7 @@ ping(NombreGrupo, MasterNode) ->
 %%% Internal Implementation
 
 init() ->
-    register(?MASTER, self()),
+    global:register_name(?MASTER, self()),
     process_flag(trap_exit, true),
     loop([]).
 
