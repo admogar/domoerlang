@@ -17,9 +17,9 @@
 
 %% PUBLIC API
 -define(VERSION,1).
--export([start/0, stop/0]).
+-export([start/0, stop/1]).
 
--export([anadir_sensor/2, obtener_grupos/0, obtener_estado_grupo/1, upgrade/0, version/0, ping/1]).
+-export([anadir_sensor/3, obtener_grupos/1, obtener_estado_grupo/2, upgrade/1, version/1, ping/2]).
 
 -export([loop/1]).
 %%% Ver http://www.erlang.org/doc/reference_manual/records.html
@@ -45,8 +45,8 @@ start() ->
 %% @spec stop() -> ok | timeout
 %% @end
 %%--------------------------------------------------------------------
-stop() ->
-    ?MASTER ! {self(), stop},
+stop(MasterNode) ->
+    {?MASTER, MasterNode} ! {self(), stop},
     receive
 	{?MASTER, stopping} ->
 	    ok
@@ -55,12 +55,12 @@ stop() ->
 	    timeout
     end.
 
-anadir_sensor(NombreGrupo, IdSensor) ->
-    ?MASTER ! {self(), {add, IdSensor, NombreGrupo}}.
+anadir_sensor(NombreGrupo, IdSensor, MasterNode) ->
+    {?MASTER, MasterNode} ! {self(), {add, IdSensor, NombreGrupo}}.
 
 %% Devuelve una lista con los nombres de grupos o [error]
-obtener_grupos() ->
-    ?MASTER ! {self(), get_lista_grupos},
+obtener_grupos(MasterNode) ->
+    {?MASTER, MasterNode} ! {self(), get_lista_grupos},
     receive
         {grupos, ListaNombreGrupos} -> ListaNombreGrupos
     after
@@ -69,8 +69,8 @@ obtener_grupos() ->
     end.
 
 
-obtener_estado_grupo(NombreGrupo) ->
-    ?MASTER ! {self(), get_estado_grupo, NombreGrupo},
+obtener_estado_grupo(NombreGrupo, MasterNode) ->
+    {?MASTER, MasterNode} ! {self(), get_estado_grupo, NombreGrupo},
     receive
         {estado_grupo, ListaEstados} -> ListaEstados
     after
@@ -78,8 +78,8 @@ obtener_estado_grupo(NombreGrupo) ->
             timeout
     end.
     
-upgrade() ->
-    ?MASTER ! {self(), upgrade},
+upgrade(MasterNode) ->
+    {?MASTER, MasterNode} ! {self(), upgrade},
     receive
     {?MASTER, upgrading} ->
       ok
@@ -88,8 +88,8 @@ upgrade() ->
       timeout
     end.
 
-version() ->
-    ?MASTER ! {self(), version},
+version(MasterNode) ->
+    {?MASTER, MasterNode} ! {self(), version},
     receive
     {?MASTER, Version} ->
       Version
@@ -98,8 +98,8 @@ version() ->
       timeout
     end.
     
-ping(NombreGrupo) -> 
-    ?MASTER ! {self(), ping, NombreGrupo},
+ping(NombreGrupo, MasterNode) -> 
+    {?MASTER, MasterNode} ! {self(), ping, NombreGrupo},
     receive
         {?MASTER, pong} -> pong
     after
