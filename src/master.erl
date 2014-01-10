@@ -19,7 +19,7 @@
 -define(VERSION,1).
 -export([start/0, stop/0]).
 
--export([anadir_sensor/2, obtener_grupos/0, obtener_estado_grupo/1, upgrade/0, version/0]).
+-export([anadir_sensor/2, obtener_grupos/0, obtener_estado_grupo/1, upgrade/0, version/0, ping/1]).
 
 -export([loop/1]).
 %%% Ver http://www.erlang.org/doc/reference_manual/records.html
@@ -97,7 +97,15 @@ version() ->
     ?TIMEOUT ->
       timeout
     end.
-
+    
+ping(NombreGrupo) -> 
+    ?MASTER ! {self(), ping, NombreGrupo},
+    receive
+        {?MASTER, pong} -> pong
+    after
+        ?TIMEOUT ->
+            timeout
+    end.
 %%% Internal Implementation
 
 init() ->
@@ -128,10 +136,18 @@ loop(Grupos) ->
             {#infoGrupo{pid_grupo=PidGrupo}, Grupos} = getGrupo(NombreGrupo, Grupos),
             From ! {estado_grupo, grupo:obtener_estado(PidGrupo)},
             loop(Grupos) ;
+            
+        {From, ping, NombreGrupo} ->
+            {#infoGrupo{pid_grupo=PidGrupo}, Grupos} = getGrupo(NombreGrupo, Grupos),
+            From ! {?MASTER, grupo:ping(PidGrupo)},
+            loop(Grupos) ;
+        
+        %{From, pong, NombreGrupo} ->
+            
         
         {From, version} ->
-    	    From ! {?MASTER, ?VERSION},
-    	    loop(Grupos);
+      	    From ! {?MASTER, ?VERSION},
+      	    loop(Grupos);
     	
         {From, upgrade} ->
     	    From ! {?MASTER, upgrading},

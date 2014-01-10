@@ -41,7 +41,7 @@
 %% ====================================================================
 -export([crear/1, crear_y_enlazar/1]).
 
--export([anadir_sensor/2, obtener_estado/1]).
+-export([anadir_sensor/2, obtener_estado/1, ping/1]).
 
 -record(infoMonitor, {pid_monitor, nombre_sensor, cache_valor, heartbeat_timestamp}).
 
@@ -66,6 +66,14 @@ obtener_estado(PidGrupo) ->
     PidGrupo ! {self(), obtenerEstado},
     receive
         {info_grupo, ListaEstados} -> ListaEstados
+    after
+        ?TIMEOUT -> [error]
+    end.
+    
+ping(PidGrupo) ->
+    PidGrupo ! {self(), ping},
+    receive
+        {PidGrupo, pong} -> pong
     after
         ?TIMEOUT -> [error]
     end.
@@ -113,6 +121,9 @@ loop(Monitores, PidMaster) ->
                                                                   cache_valor=Valor},
             loop(lists:keyreplace(PidMonitor, #infoMonitor.pid_monitor, Monitores, NuevoEstadoMonitor), PidMaster)
     
+        ; {From, ping} ->
+            From ! {self(),pong},
+            loop(Monitores, PidMaster)
         ; {From, obtenerEstado} ->
             TimestampAhora=os:timestamp(),
             From ! {info_grupo, [{EstadoMonitor#infoMonitor.nombre_sensor,
