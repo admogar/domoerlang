@@ -19,8 +19,9 @@
 -define(VERSION,1).
 -export([start/0, stop/0]).
 
--export([anadir_sensor/2, obtener_grupos/0, obtener_estado_grupo/1]).
+-export([anadir_sensor/2, obtener_grupos/0, obtener_estado_grupo/1, upgrade/0, version/0]).
 
+-export([loop/1]).
 %%% Ver http://www.erlang.org/doc/reference_manual/records.html
 %%% Ver http://www.erlang.org/doc/programming_examples/records.html
 -record(infoGrupo, {nombre, sensores = [], pid_grupo}).
@@ -76,6 +77,26 @@ obtener_estado_grupo(NombreGrupo) ->
         ?TIMEOUT ->
             timeout
     end.
+    
+upgrade() ->
+    ?MASTER ! {self(), upgrade},
+    receive
+    {?MASTER, upgrading} ->
+      ok
+    after
+    ?TIMEOUT ->
+      timeout
+    end.
+
+version() ->
+    ?MASTER ! {self(), version},
+    receive
+    {?MASTER, Version} ->
+      Version
+    after
+    ?TIMEOUT ->
+      timeout
+    end.
 
 %%% Internal Implementation
 
@@ -115,7 +136,7 @@ loop(Grupos) ->
         {From, upgrade} ->
     	    From ! {?MASTER, upgrading},
                 %TODO: PROPAGAR UPGRADE A LISTA
-    	    ?MODULE:loop(Grupos) ;
+    	    ?MODULE:loop(Grupos);
     	
         {From, stop} ->
             unregister(?MASTER),
