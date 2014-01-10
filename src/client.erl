@@ -92,6 +92,6 @@ version(MasterNode) ->
 %% @end
 %%--------------------------------------------------------------------
 ping(NombreGrupo, MasterNode) ->
-    master:ping(NombreGrupo, MasterNode).
+    timer:tc(master, ping, [NombreGrupo, MasterNode]).
     
 %%% Internal Implementation
