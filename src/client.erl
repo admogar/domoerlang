@@ -15,7 +15,7 @@
 
 %% PUBLIC API
 -export([start/0, stop/1]).
--export([add/2, listMonitors/1, checkMonitor/2]).
+-export([add/3, listGroups/1, checkGroup/2, ping/2]).
 -export([upgrade/1, version/1]).
 
 %%--------------------------------------------------------------------
@@ -24,7 +24,7 @@
 %% @end
 %%--------------------------------------------------------------------
 start() ->
-    ?MASTER:start(),
+    master:start(),
     ok.
 
 %%--------------------------------------------------------------------
@@ -35,93 +35,63 @@ start() ->
 %% @end
 %%--------------------------------------------------------------------
 stop(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), stop},
-    receive
-	{?MASTER, State} ->
-	    State
-    after
-	?TIMEOUT ->
-	    timeout
-    end.
+    master:stop(MasterNode),
+    ok.
 
 %%--------------------------------------------------------------------
-%% @doc Adds a new monitor.
-%% @spec add(MasterNode :: pid(), Monitor :: pid()) ->
-%%           State :: pid() | timeout
+%% @doc Adds a new sensor and group.
+%% @spec add(Group :: string(), Sensor :: string(), MasterNode :: node()) ->
+%%           void
 %% @end
 %%--------------------------------------------------------------------
-add(MasterNode, Monitor) ->
-    {?MASTER, MasterNode} ! {self(), {add, Monitor}},
-    receive
-	{?MASTER, State} ->
-	    State
-    after
-	?TIMEOUT ->
-	    timeout
-    end.
+add(NombreGrupo, IdSensor, MasterNode) ->
+    master:anadir_sensor(NombreGrupo, IdSensor, MasterNode),
+    ok.
     
 %%--------------------------------------------------------------------
-%% @doc Lists active monitors.
+%% @doc Lists existing groups.
 %% @spec listMonitors(MasterNode :: pid()) ->
-%%                    list(pid()) | timeout
+%%                    list(string()) | timeout
 %% @end
 %%--------------------------------------------------------------------
-listMonitors(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), list_monitors},
-    receive
-	{?MASTER, List} ->
-	    List
-    after
-	?TIMEOUT ->
-	    timeout
-    end.
+listGroups(MasterNode) ->
+    master:obtener_grupos(MasterNode).
     
 %%--------------------------------------------------------------------
-%% @doc Checks state of a sensor.
-%% @spec checkMonitor(MasterNode :: pid(), Monitor :: pid()) ->
-%%                    Value :: integer() | timeout
+%% @doc Checks state of a group.
+%% @spec checkMonitor(GroupName :: string(), MasterNode :: node()) ->
+%%                    Value :: list() | timeout
 %% @end
 %%--------------------------------------------------------------------
-checkMonitor(MasterNode, Monitor) ->
-    {?MASTER, MasterNode} ! {self(), {check, Monitor}},
-    receive
-	{?MASTER, Value} ->
-	    Value
-    after
-	?TIMEOUT ->
-	    timeout
-    end.
-
+checkGroup(NombreGrupo, MasterNode) ->
+    master:obtener_estado_grupo(NombreGrupo, MasterNode).
+    
 %%--------------------------------------------------------------------
 %% @doc Updates the server to the last compiled version.
-%% @spec upgrade(MasterNode :: pid()) -> ok | timeout
+%% @spec upgrade(MasterNode :: node()) -> ok | timeout
 %% @end
 %%--------------------------------------------------------------------
 upgrade(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), upgrade},
-    receive
-	{?MASTER, upgrading} ->
-	    ok
-    after
-	?TIMEOUT ->
-	    timeout
-    end.
+    master:upgrade(MasterNode).
 
 %%--------------------------------------------------------------------
 %% @doc Prints the version on execution.
-%% @spec version(pid()) ->
+%% @spec version(node()) ->
 %%               nonempty_string() |
 %%               timeout
 %% @end
 %%--------------------------------------------------------------------
 version(MasterNode) ->
-    {?MASTER, MasterNode} ! {self(), version},
-    receive
-	{?MASTER, Version} ->
-	    Version
-    after
-	?TIMEOUT ->
-	    timeout
-    end.
-
+    master:version(MasterNode).
+    
+%%--------------------------------------------------------------------
+%% @doc Pings the specified group.
+%% @spec ping(string(), node()) ->
+%%               pong |
+%%               timeout
+%% @end
+%%--------------------------------------------------------------------
+ping(NombreGrupo, MasterNode) ->
+    master:ping(NombreGrupo, MasterNode).
+    
 %%% Internal Implementation
