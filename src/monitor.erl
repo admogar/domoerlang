@@ -38,7 +38,7 @@ init(GroupPid, SensorId) ->
     loop_stopped(GroupPid, PidSensor, SensorType, undefined).
 
 %%--------------------------------------------------------------------
-%% @doc Configures a monitor in order to send notifications to a group
+%% @doc Configures a monitor in order to send notifications to a group.
 %% @spec configurar_padre(PidMonitor :: pid(),
 %%                        PidGrupo :: pid())
 %%                        -> ok
@@ -48,13 +48,18 @@ configurar_padre(PidMonitor, PidGrupo) ->
     PidMonitor ! {self(), {configurar_padre, PidGrupo}}.
 
 %%--------------------------------------------------------------------
-%% @doc Changes the monitor state to working
+%% @doc Changes the monitor state to started.
 %% @spec start(PidMonitor :: pid()) -> starting
 %% @end
 %%--------------------------------------------------------------------
 start(PidMonitor) ->
     PidMonitor ! {self(), start}.    
 
+%%--------------------------------------------------------------------
+%% @doc Changes the monitor state to stopped.
+%% @spec pause(PidMonitor :: pid()) -> pausing
+%% @end
+%%--------------------------------------------------------------------
 pause(PidMonitor) ->
     PidMonitor ! {self(), pause}.
 
@@ -111,6 +116,7 @@ loop_started(GroupPid, PidSensor, SensorType, Value) ->
             loop_started(GroupPid, PidSensor, SensorType, NewValue) ;
 
         {_From, pause} ->
+	    From ! {self(), pausing},         % Pasar a estado stop
             loop_stopped(GroupPid, PidSensor, SensorType, Value)
     
     after
