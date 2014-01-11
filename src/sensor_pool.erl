@@ -13,6 +13,7 @@
 %%% @end
 %%%-------------------------------------------------------------------
 -module(sensor_pool).
+-include("client.hrl").
 
 %% PUBLIC API
 -export([start/0]).
@@ -24,8 +25,18 @@
 %% @end
 %%--------------------------------------------------------------------
 start() ->
-    spawn(fun() -> init() end),
-    ok.
+    case global:whereis_name(?SENSOR_POOL) of
+        undefined ->
+            spawn(fun() -> init() end)
+      ; _PidMaster ->
+            throw({error, sensor_pool_already_running})
+    end.
+
+get_sensor_pool_pid() ->
+    case global:whereis_name(?SENSOR_POOL) of
+        undefined -> start()
+      ; PidSensorPool -> PidSensorPool
+    end.
 
 %%--------------------------------------------------------------------
 %% @doc Gets a sensor. Gets the sensor labeled with the given atom.
@@ -35,7 +46,7 @@ start() ->
 %% @end
 %%--------------------------------------------------------------------
 get_sensor(SensorName) ->
-    ?MODULE ! {self(), getSensor, SensorName},
+    get_sensor_pool_pid() ! {self(), getSensor, SensorName},
     receive
         PidSensor -> PidSensor
     end.
@@ -43,7 +54,7 @@ get_sensor(SensorName) ->
 %%% Internal implementation %%%
     
 init() ->
-    register(?MODULE, self()),
+    global:register_name(?SENSOR_POOL, self()),
     loop(sensor_load()).
 
 loop(SensorList) ->

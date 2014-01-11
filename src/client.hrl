@@ -1,4 +1,5 @@
 -define(MASTER, master). % Master node naem
+-define(SENSOR_POOL, sensor_pool_global_name).
 -define(TIMEOUT, 3000). % Petitions timeout
 -define(ADMIN_MAIL, "alfonso.nishikawa@gmail.com"). % Admin mail
 -define(DOMOERL_MAIL, "domoerlang@gmail.com"). % Domoerlang mail

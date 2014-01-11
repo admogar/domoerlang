@@ -1,5 +1,5 @@
-% Iniciar el pool
-sensor_pool:start().
+% No es necesario iniciar el pool de sensores porque se inicia con la primera petición
+% sensor_pool:start().
 
 % Iniciar el master
 client:start().
