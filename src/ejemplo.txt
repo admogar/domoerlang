@@ -13,5 +13,7 @@ client:listGroups().
 %   tiempo transcurrido desde el último heartbeat}
 client:checkGroup("cocina").
 
+client:getSensorValue("cocina", "luz").
+
 % Parar el master (envío de información del nodo actual)
 client:stop().

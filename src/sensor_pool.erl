@@ -48,7 +48,8 @@ get_sensor_pool_pid() ->
 get_sensor(SensorName) ->
     get_sensor_pool_pid() ! {self(), getSensor, SensorName},
     receive
-        PidSensor -> PidSensor
+        {return_getSensor, SensorType, PidSensor} -> {SensorType, PidSensor}
+      ; null -> throw ({error, sensor_no_existente})
     end.
 
 %%% Internal implementation %%%
@@ -62,7 +63,7 @@ loop(SensorList) ->
         {From, getSensor, SensorName} ->
             case lists:keyfind(SensorName, 1, SensorList) of
                 {SensorName, SensorType, PidSensor} ->
-                    From ! {SensorType, PidSensor};
+                    From ! {return_getSensor, SensorType, PidSensor};
         		
                 false ->
                     From ! null
@@ -75,6 +76,6 @@ loop(SensorList) ->
 
 sensor_load() ->
     [
-        ["luz", bin, sensor:start(bin)],
-        ["temperatura", num, sensor:start({num,0,100})]
+        {"luz", bin, sensor:start(bin)},
+        {"temperatura", num, sensor:start({num,0,100})}
     ].

@@ -55,7 +55,7 @@ crear_y_enlazar(PidMaster) ->
     
 %%% anadir_sensor(PidGrupo : pid(), IdSensor: string())
 anadir_sensor(PidGrupo, IdSensor) ->
-    PidGrupo ! {self(), {anadir, IdSensor}}.
+    PidGrupo ! {self(), anadir, IdSensor}.
 
 % Devuelve una lista con lo siguiente:
 % [nombre sensor, valor en cache, tiempo desde el ultimo heartbeat]
@@ -72,8 +72,11 @@ obtener_estado(PidGrupo) ->
 
 obtener_valor_sensor(PidGrupo, NombreSensor) ->
     PidGrupo ! {self(), obtener_valor_sensor, NombreSensor},
-    receive ValorOrError -> ValorOrError
-    after ?TIMEOUT -> {error}
+    receive
+        {valor_sensor, Valor} -> Valor
+      ; {error, X} -> {error, X}
+    after
+        ?TIMEOUT -> {error}
     end.
 
 ping(PidGrupo) ->
@@ -100,7 +103,7 @@ init(PidMaster) ->
 loop(Monitores, PidMaster) ->
     receive
 
-        {_From, {anadir, IdSensor}} ->
+        {_From, anadir, IdSensor} ->
             % Si ya contenemos el sensor, ignoramos
             case lists:keyfind(IdSensor, #infoMonitor.nombre_sensor, Monitores) of
                 InfoMonitor when is_record(InfoMonitor, infoMonitor) ->
@@ -109,10 +112,11 @@ loop(Monitores, PidMaster) ->
                     % Si no contenemos el monitor lo añadimos y configuramos
                     NuevoMonitor = #infoMonitor{pid_monitor=monitor:start_link(self(), IdSensor),
                                                 nombre_sensor=IdSensor,
-                                                heartbeat_timestamp=os:timestamp()},
+                                                heartbeat_timestamp=os:timestamp()},    
                     NuevosMonitores = [NuevoMonitor| Monitores],
-                    monitor:configurar_padre(NuevoMonitor#infoMonitor.pid_monitor, self()), % Monitor notificará a este grupo (self)
-
+                    PidNuevoMonitor = NuevoMonitor#infoMonitor.pid_monitor,
+                    monitor:configurar_padre(PidNuevoMonitor, self()), % Monitor notificará a este grupo (self)
+                    monitor:start(PidNuevoMonitor),
                     loop(NuevosMonitores, PidMaster)
             end
 
@@ -130,6 +134,7 @@ loop(Monitores, PidMaster) ->
         ; {From, ping} ->
             From ! {self(),pong},
             loop(Monitores, PidMaster)
+    
         ; {From, obtenerEstado} ->
             TimestampAhora=os:timestamp(),
             From ! {info_grupo, [{EstadoMonitor#infoMonitor.nombre_sensor,

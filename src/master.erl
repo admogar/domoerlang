@@ -63,7 +63,7 @@ stop() ->
     end.
 
 anadir_sensor(NombreGrupo, IdSensor) ->
-    get_master_pid() ! {self(), {add, IdSensor, NombreGrupo}}.
+    get_master_pid() ! {self(), add, IdSensor, NombreGrupo}.
 
 %% Devuelve una lista con los nombres de grupos o [error]
 obtener_grupos() ->
@@ -88,9 +88,8 @@ obtener_estado_grupo(NombreGrupo) ->
 obtener_valor_sensor(NombreGrupo, NombreSensor) ->
     get_master_pid() ! {self(), get_valor_sensor, NombreGrupo, NombreSensor},
     receive
-        {valor_sensor, Valor} -> Valor
-      ; {error, grupo_inexistente} -> {error, grupo_inexistente}
-      ; {error, sensor_inexistente} -> {error, sensor_inexistente}
+        {return_valor_sensor, {error, X}} -> {error, X}
+      ; {return_valor_sensor, Valor} -> Valor
     after
         ?TIMEOUT ->
             timeout
@@ -140,7 +139,7 @@ init() ->
 %% {'EXIT', Pid, Reason} - En caso de error en monitor, reinicio
 loop(Grupos) ->
     receive
-    	{_From, {add, IdSensor, NombreGrupo}} ->
+    	{_From, add, IdSensor, NombreGrupo} ->
             % getGrupo() crea y añade el grupo en caso de no existir
             {InfoGrupo, NuevoGrupos} = getGrupo(NombreGrupo, Grupos),
             grupo:anadir_sensor(InfoGrupo#infoGrupo.pid_grupo, IdSensor),
@@ -158,16 +157,11 @@ loop(Grupos) ->
         {From, get_valor_sensor, NombreGrupo, NombreSensor} ->
             case existe_grupo(NombreGrupo, Grupos) of
                 false ->
-                    From ! {error, grupo_inexistente},
+                    From ! {return_valor_sensor, {error, grupo_inexistente}},
                     loop(Grupos)
               ; true ->
                     {#infoGrupo{pid_grupo=PidGrupo}, Grupos} = getGrupo(NombreGrupo, Grupos),
-                    grupo:obtener_valor_sensor(PidGrupo, NombreSensor),
-                    receive
-                        ValorOrError -> From ! ValorOrError
-                    after ?TIMEOUT ->
-                        From ! {error}
-                    end,
+                    From ! {return_valor_sensor, grupo:obtener_valor_sensor(PidGrupo, NombreSensor)},
                     loop(Grupos)
             end ;
         

@@ -35,17 +35,18 @@ start_link(GroupPid, SensorId) ->
 %%--------------------------------------------------------------------
 init(GroupPid, SensorId) ->
     {SensorType, PidSensor} = sensor_pool:get_sensor(SensorId),
-    loop_stopped(GroupPid, PidSensor, SensorType, undefined).
+   loop_stopped(GroupPid, PidSensor, SensorType, undefined).
 
 %%--------------------------------------------------------------------
 %% @doc Configures a monitor in order to send notifications to a group
+%%      Síncrono.
 %% @spec configurar_padre(PidMonitor :: pid(),
 %%                        PidGrupo :: pid())
 %%                        -> ok
 %% @end
 %%--------------------------------------------------------------------
 configurar_padre(PidMonitor, PidGrupo) ->
-    PidMonitor ! {self(), {configurar_padre, PidGrupo}}.
+    PidMonitor ! {self(), configurar_padre, PidGrupo}.
 
 %%--------------------------------------------------------------------
 %% @doc Changes the monitor state to working
@@ -67,21 +68,17 @@ loop_stopped(GroupPid, PidSensor, SensorType, Value) ->
     	    From ! {self(), pong},
     	    loop_stopped(GroupPid, PidSensor, SensorType, Value);
             
-    	{From, upgrade} ->
-    	    From ! {self(), ok},
-    	    
+    	{_From, upgrade} ->
             ?MODULE:init(GroupPid, PidSensor, SensorType, Value);
         
-        {From, {configurar_padre, NewGroupPid}} ->
-    	    From ! {self(), ok},
-    	    loop_stopped(NewGroupPid, PidSensor, SensorType, Value) ;
+        {_From, configurar_padre, NewGroupPid} ->
+            loop_stopped(NewGroupPid, PidSensor, SensorType, Value) ;
             
-    	{From, start} ->
-            PidSensor ! {self(), setObserver}, % Establecer el observador del sensor
-    	    From ! {self(), starting},         % Pasar a estado start
+    	{_From, start} ->
+            sensor:set_observer(PidSensor),
     	    loop_started(GroupPid, PidSensor, SensorType, Value) ;
     
-        _ -> % ignorar cualquier otra cosa (pausado/stop => ignorar)
+        {valor, _NewValue} ->
             loop_stopped(GroupPid, PidSensor, SensorType, Value)
     end.
 
@@ -96,7 +93,10 @@ loop_started(GroupPid, PidSensor, SensorType, Value) ->
     	    From ! {self(), upgrading},
     	    ?MODULE:init(GroupPid, PidSensor, SensorType, Value);
             
-    	{From, getValue} ->
+        {_From, configurar_padre, NewGroupPid} ->
+            loop_started(NewGroupPid, PidSensor, SensorType, Value) ;
+        
+        {From, getValue} ->
             From ! {self(), Value},
     	    loop_started(GroupPid, PidSensor, SensorType, Value);
 
@@ -106,7 +106,10 @@ loop_started(GroupPid, PidSensor, SensorType, Value) ->
                     if NewValue - Value > 70 -> GroupPid ! {self(), heartbeat, NewValue} end ;
                     
                 bin ->
-                    if NewValue /= Value -> GroupPid ! {self(), heartbeat, NewValue} end
+                    if
+                        NewValue /= Value -> GroupPid ! {self(), heartbeat, NewValue}
+                      ; true -> ignore
+                    end
             end,
             loop_started(GroupPid, PidSensor, SensorType, NewValue) ;
 
