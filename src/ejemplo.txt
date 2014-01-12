@@ -23,3 +23,10 @@ client:getSensorValue("cocina", "luz").
 
 % Parar el master (envío de información del nodo actual)
 client:stop().
+
+
+
+% How to kill a monitor:
+% i().
+% exit(pid(0,52,0), hard).
+% i().

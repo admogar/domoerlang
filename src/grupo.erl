@@ -162,6 +162,13 @@ loop(Monitores, PidMaster) ->
             loop(Monitores, PidMaster)
     
         ; {'EXIT', PidMaster, _Reason} -> fin_de_master % Finalizamos la ejecución de grupo porque el master ha finalizado
+
+        ; {'EXIT', PidMonitor, Reason} ->
+            SensorName = find_sensor_name(PidMonitor, Monitores),
+            io:format("The monitor ~p for sensor ~p is down. Reason: ~p. Relaunching.~n", [PidMonitor, SensorName, Reason]),
+            NewMonitorsList = lists:keydelete(PidMonitor, #infoMonitor.pid_monitor, Monitores),
+            anadir_sensor(self(), SensorName),
+            loop(NewMonitorsList, PidMaster)
     
         ; MensajeInesperado ->
             io:format("Mensaje inesperado: ~p~n", [MensajeInesperado]),
@@ -173,3 +180,13 @@ diferencia_segundos(EstadoMonitor, TimestampAhora) ->
     {_, SegundosAhora, _} = TimestampAhora,
     SegundosAhora - SegundosMonitor.
 
+%%--------------------------------------------------------------------
+%% @doc Gets the sensor name from a monitor pid
+%% @spec find_sensor_name(PidMonitor :: pid(), MonitorsList :: list(infoMonitor))
+%%          -> {string()}
+%% @end
+%%--------------------------------------------------------------------
+find_sensor_name(PidMonitor, MonitorsList) ->
+    case lists:keyfind(PidMonitor, #infoMonitor.pid_monitor, MonitorsList) of
+        InfoMonitor -> InfoMonitor#infoMonitor.nombre_sensor
+    end.
