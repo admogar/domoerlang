@@ -21,7 +21,6 @@
 
 %%--------------------------------------------------------------------
 %% @doc Starts the sensor pool creation.
-%% @spec start() -> ok | exception
 %% @end
 %%--------------------------------------------------------------------
 start() ->
@@ -32,17 +31,10 @@ start() ->
             throw({error, sensor_pool_already_running})
     end.
 
-get_sensor_pool_pid() ->
-    case global:whereis_name(?SENSOR_POOL) of
-        undefined -> start()
-      ; PidSensorPool -> PidSensorPool
-    end.
-
 %%--------------------------------------------------------------------
-%% @doc Gets a sensor. Gets the sensor labeled with the given atom.
-%% @spec getSensor(SensorName) -> {Type :: atom(),
-%%                                 SensorPID :: pid()}
-%%                                | null
+%% @doc Gets a sensor PID.
+%% @spec getSensor(SensorName :: string()) ->
+%%                 {Type :: num | bin, SensorPID :: pid()} | null
 %% @end
 %%--------------------------------------------------------------------
 get_sensor(SensorName) ->
@@ -52,6 +44,12 @@ get_sensor(SensorName) ->
     end.
 
 %%% Internal implementation %%%
+
+get_sensor_pool_pid() ->
+    case global:whereis_name(?SENSOR_POOL) of
+        undefined -> start()
+      ; PidSensorPool -> PidSensorPool
+    end.
     
 init() ->
     global:register_name(?SENSOR_POOL, self()),
