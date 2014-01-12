@@ -1,8 +1,14 @@
 % No es necesario iniciar el pool de sensores porque se inicia con la primera petición
 % sensor_pool:start().
 
+% Start a node with
+% erl -sname name
+
 % Iniciar el master
 client:start().
+
+% Link a new node with all
+% net_kernel:connect_node(node@host).
 
 client:add("cocina", "luz").
 client:listGroups().

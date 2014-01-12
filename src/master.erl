@@ -146,7 +146,7 @@ loop(Grupos) ->
     	    loop(NuevoGrupos) ;
 
         {From, get_lista_grupos} ->
-            From ! {grupos, [ InfoGrupo#infoGrupo.nombre || InfoGrupo <- Grupos]},
+            From ! {grupos, [ {InfoGrupo#infoGrupo.nombre, node(InfoGrupo#infoGrupo.pid_grupo)} || InfoGrupo <- Grupos]},
             loop(Grupos) ;
         
         {From, get_estado_grupo, NombreGrupo} ->
@@ -219,7 +219,21 @@ getGrupo(NombreGrupo, Grupos) ->
             {InfoGrupo, Grupos}
 
         ; false ->
-            PidNuevoGrupo = grupo:crear_y_enlazar(self()), % Se le pasa al constructor el pid del master
+            % Instances a new group in a random node
+            RandomNode = select_random_node(),
+            PidNuevoGrupo = grupo:crear_y_enlazar(RandomNode, self()), % Se le pasa al constructor el pid del master
             NuevoGrupo = #infoGrupo{nombre=NombreGrupo, pid_grupo=PidNuevoGrupo},
             { NuevoGrupo, [NuevoGrupo | Grupos] }
     end.
+
+%%--------------------------------------------------------------------
+%% @doc Return a ramdon node in the network
+%% @spec select_random_node()
+%%       -> atom()
+%% @end
+%%--------------------------------------------------------------------
+select_random_node() ->
+    Nodes = [node()|nodes()], % nodes() does not return own node
+    NumElements = erlang:length(Nodes),
+    RandomIndex = random:uniform(NumElements),
+    lists:nth(RandomIndex, Nodes).

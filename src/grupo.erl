@@ -39,7 +39,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([crear/1, crear_y_enlazar/1]).
+-export([crear/1, crear_y_enlazar/1, crear_y_enlazar/2]).
 
 -export([anadir_sensor/2, obtener_estado/1, obtener_valor_sensor/2, ping/1]).
 
@@ -52,7 +52,16 @@ crear(PidMaster) ->
 %%% crear_y_enlazar(PidMaster): pid()
 crear_y_enlazar(PidMaster) ->
     spawn_link(fun() -> init(PidMaster) end).
-    
+
+%%--------------------------------------------------------------------
+%% @doc Creates a group in a given node and links it
+%% @spec crear_y_enlazar(Node :: atom(), PidMaster :: pid())
+%%       -> pid()
+%% @end
+%%--------------------------------------------------------------------
+crear_y_enlazar(Node, PidMaster) ->
+    spawn_link(Node, fun() -> init(PidMaster) end).
+
 %%% anadir_sensor(PidGrupo : pid(), IdSensor: string())
 anadir_sensor(PidGrupo, IdSensor) ->
     PidGrupo ! {self(), anadir, IdSensor}.
