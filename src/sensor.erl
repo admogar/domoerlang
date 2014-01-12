@@ -20,9 +20,9 @@
 
 %%--------------------------------------------------------------------
 %% @doc Starts the sensor.
-%% @spec start(Type :: {num :: atom(), Min :: integer(), Max :: integer()}
-%%             | bin :: atom())
-%%       -> pid() | exception
+%% @spec start(Type) -> pid() | exception
+%% Type = tuple() | bin
+%% Tuple = {num, Min :: integer(), Max :: integer()}
 %% @end
 %%--------------------------------------------------------------------
 start(Type) ->

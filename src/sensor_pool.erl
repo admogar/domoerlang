@@ -33,8 +33,9 @@ start() ->
 
 %%--------------------------------------------------------------------
 %% @doc Gets a sensor PID.
-%% @spec getSensor(SensorName :: string()) ->
-%%                 {Type :: num | bin, SensorPID :: pid()} | null
+%% @spec get_sensor(SensorName :: string()) ->
+%%                 {Type, SensorPID :: pid()} | null
+%%       Type = num | bin
 %% @end
 %%--------------------------------------------------------------------
 get_sensor(SensorName) ->

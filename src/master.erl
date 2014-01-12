@@ -62,7 +62,7 @@ anadir_sensor(NombreGrupo, IdSensor) ->
     get_master_pid() ! {self(), {add, IdSensor, NombreGrupo}}.
 
 %%--------------------------------------------------------------------
-%% @doc Returns a list containing the groups' names.
+%% @doc Returns a list containing the groups's names.
 %% @spec obtener_grupos() -> ListaNombreGrupos :: list(string())
 %%                           | [error]
 %% @end
@@ -79,10 +79,10 @@ obtener_grupos() ->
 %%--------------------------------------------------------------------
 %% @doc Gets a list of states of a group of sensors.
 %% @spec obtener_estado_grupo(NombreGrupo :: string()) ->
-%%                           list({NombreSensor :: string(),
-%%                                 CacheValor :: integer() | boolean(),
-%%                                 DiferenciaSegundos :: integer()})
-%%                            | timeout
+%%                           list(Estado) | timeout
+%%       Estado = {NombreSensor :: string(),
+%%                 CacheValor :: integer() | boolean(),
+%%                 DiferenciaSegundos :: integer()}
 %% @end
 %%--------------------------------------------------------------------
 obtener_estado_grupo(NombreGrupo) ->
@@ -98,9 +98,10 @@ obtener_estado_grupo(NombreGrupo) ->
 %% @doc Gets the state of a sensor given its group's name.
 %% @spec obtener_valor_sensor(NombreGrupo :: string(),
 %%                            NombreSensor :: string()) ->
-%%                            Valor :: integer() :: boolean()
+%%                            Estado
 %%                            | {error, grupo_inexistente}
 %%                            | {error, sensor_inexistente}
+%%       Estado = integer() | boolean()
 %% @end
 %%--------------------------------------------------------------------
 obtener_valor_sensor(NombreGrupo, NombreSensor) ->
@@ -131,7 +132,7 @@ upgrade() ->
     end.
 
 %%--------------------------------------------------------------------
-%% @doc Shows the master code version in execution.
+%% @doc Shows version in execution of the master.
 %% @spec version() -> Version :: string() | timeout
 %% @end
 %%--------------------------------------------------------------------

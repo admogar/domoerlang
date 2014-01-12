@@ -56,9 +56,10 @@ listGroups() ->
 %% @doc Gets a list of states of a group of sensors.
 %% @spec checkGroup(NombreGrupo :: string()) ->
 %%                           list({NombreSensor :: string(),
-%%                                 CacheValor :: integer() | boolean(),
-%%                                 DiferenciaSegundos :: timestamp()})
+%%                                 CacheValor,
+%%                                 DiferenciaSegundos :: integer()})
 %%                            | timeout
+%%       CacheValor = integer() | boolean()
 %% @end
 %%--------------------------------------------------------------------
 checkGroup(NombreGrupo) ->
@@ -68,9 +69,10 @@ checkGroup(NombreGrupo) ->
 %% @doc Gets the state of a sensor given its group's name.
 %% @spec getSensorValue(NombreGrupo :: string(),
 %%                            NombreSensor :: string()) ->
-%%                            Valor :: integer() :: boolean()
+%%                            Estado
 %%                            | {error, grupo_inexistente}
 %%                            | {error, sensor_inexistente}
+%%       Estado = integer() | boolean()
 %% @end
 %%--------------------------------------------------------------------
 getSensorValue(NombreGrupo, NombreSensor) ->
@@ -86,7 +88,7 @@ upgrade() ->
 
 %%--------------------------------------------------------------------
 %% @doc Prints the version on execution.
-%% @spec version() -> Version :: string() | timeout
+%% @spec version() -> string() | timeout
 %% @end
 %%--------------------------------------------------------------------
 version() ->
@@ -95,7 +97,7 @@ version() ->
 %%--------------------------------------------------------------------
 %% @doc Checks if a group is alive.
 %% @spec ping(NombreGrupo :: string()) ->
-%%               {Time :: integer() , pong | timeout}
+%%               {Time :: integer(), pong | timeout}
 %% @end
 %%--------------------------------------------------------------------
 ping(NombreGrupo) ->

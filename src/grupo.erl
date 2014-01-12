@@ -76,12 +76,13 @@ anadir_sensor(PidGrupo, IdSensor) ->
 % valor en cache: depende del sensor
 % tiempo desde el último heartbeat: segundos
 %%--------------------------------------------------------------------
-%% @doc
+%% @doc Gets a list of states of a group of sensors.
 %% @spec obtener_estado(PidGrupo :: pid()) ->
 %%                      list({NombreSensor :: string(),
-%%                            CacheValor :: integer() | boolean(),
+%%                            CacheValor,
 %%                            DiferenciaSegundos :: integer()})
 %%                      | timeout
+%%       CacheValor = integer() | boolean()
 %% @end
 %%--------------------------------------------------------------------
 obtener_estado(PidGrupo) ->
@@ -95,12 +96,12 @@ obtener_estado(PidGrupo) ->
 %%--------------------------------------------------------------------
 %% @doc Gets the actual value of a sensor.
 %% @spec obtener_valor_sensor(PidGrupo :: pid(),
-%%                            NombreSensor :: string() ->
+%%                            NombreSensor :: string()) ->
 %%                            ValorOrError :: {valor_sensor,
-%%                                             CacheValor :: integer()
-%%                                                         | boolean()}
+%%                                             CacheValor}
 %%                            | {error, sensor_inexistente}
 %%                            | {error}
+%%        CacheValor = integer() | boolean()
 %% @end
 %%--------------------------------------------------------------------
 obtener_valor_sensor(PidGrupo, NombreSensor) ->
