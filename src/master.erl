@@ -81,7 +81,7 @@ obtener_grupos() ->
 %% @spec obtener_estado_grupo(NombreGrupo :: string()) ->
 %%                           list({NombreSensor :: string(),
 %%                                 CacheValor :: integer() | boolean(),
-%%                                 DiferenciaSegundos :: timestamp()})
+%%                                 DiferenciaSegundos :: integer()})
 %%                            | timeout
 %% @end
 %%--------------------------------------------------------------------

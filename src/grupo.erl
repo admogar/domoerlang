@@ -46,14 +46,27 @@
 -record(infoMonitor, {pid_monitor, nombre_sensor, cache_valor, heartbeat_timestamp}).
 
 %%% crear(PidMaster): pid()
+%%--------------------------------------------------------------------
+%% @doc Creates a group.
+%% @end
+%%--------------------------------------------------------------------
 crear(PidMaster) ->
     spawn(fun() -> init(PidMaster) end).
 
 %%% crear_y_enlazar(PidMaster): pid()
+%%--------------------------------------------------------------------
+%% @doc Creates a group and links the caller process to it.
+%% @end
+%%--------------------------------------------------------------------
 crear_y_enlazar(PidMaster) ->
     spawn_link(fun() -> init(PidMaster) end).
     
 %%% anadir_sensor(PidGrupo : pid(), IdSensor: string())
+%%--------------------------------------------------------------------
+%% @doc Adds a sensor to a group. If the group doesn't exist, also
+%% creates it.
+%% @end
+%%--------------------------------------------------------------------
 anadir_sensor(PidGrupo, IdSensor) ->
     PidGrupo ! {self(), {anadir, IdSensor}}.
 
@@ -62,6 +75,15 @@ anadir_sensor(PidGrupo, IdSensor) ->
 % nonmbre sensor: string
 % valor en cache: depende del sensor
 % tiempo desde el último heartbeat: segundos
+%%--------------------------------------------------------------------
+%% @doc
+%% @spec obtener_estado(PidGrupo :: pid()) ->
+%%                      list({NombreSensor :: string(),
+%%                            CacheValor :: integer() | boolean(),
+%%                            DiferenciaSegundos :: integer()})
+%%                      | timeout
+%% @end
+%%--------------------------------------------------------------------
 obtener_estado(PidGrupo) ->
     PidGrupo ! {self(), obtenerEstado},
     receive
@@ -70,12 +92,28 @@ obtener_estado(PidGrupo) ->
         ?TIMEOUT -> {error}
     end.
 
+%%--------------------------------------------------------------------
+%% @doc Gets the actual value of a sensor.
+%% @spec obtener_valor_sensor(PidGrupo :: pid(),
+%%                            NombreSensor :: string() ->
+%%                            ValorOrError :: {valor_sensor,
+%%                                             CacheValor :: integer()
+%%                                                         | boolean()}
+%%                            | {error, sensor_inexistente}
+%%                            | {error}
+%% @end
+%%--------------------------------------------------------------------
 obtener_valor_sensor(PidGrupo, NombreSensor) ->
     PidGrupo ! {self(), obtener_valor_sensor, NombreSensor},
     receive ValorOrError -> ValorOrError
     after ?TIMEOUT -> {error}
     end.
 
+%%--------------------------------------------------------------------
+%% @doc Checks if a group is alive
+%% @spec ping(PidGrupo :: pid()) -> pong | {error}
+%% @end
+%%--------------------------------------------------------------------
 ping(PidGrupo) ->
     PidGrupo ! {self(), ping},
     receive
