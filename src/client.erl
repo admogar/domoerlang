@@ -19,7 +19,7 @@
 -export([upgrade/0, version/0]).
 
 %%--------------------------------------------------------------------
-%% @doc Commands the master to start.
+%% @doc Starts the master.
 %% @spec start() -> ok
 %% @end
 %%--------------------------------------------------------------------
@@ -28,20 +28,16 @@ start() ->
     ok.
 
 %%--------------------------------------------------------------------
-%% @doc Commands the master to stop.
-%% @spec stop(MasterNode :: pid()) ->
-%%            State :: atom() |
-%%                     timeout 
+%% @doc Stops the master.
+%% @spec stop() -> ok | timeout 
 %% @end
 %%--------------------------------------------------------------------
 stop() ->
-    master:stop(),
-    ok.
+    master:stop().
 
 %%--------------------------------------------------------------------
-%% @doc Adds a new sensor and group.
-%% @spec add(Group :: string(), Sensor :: string(), MasterNode :: node()) ->
-%%           void
+%% @doc Adds a sensor to a group.
+%% @spec add(NombreGrupo :: string(), IdSensor :: string()) -> ok
 %% @end
 %%--------------------------------------------------------------------
 add(NombreGrupo, IdSensor) ->
@@ -49,31 +45,40 @@ add(NombreGrupo, IdSensor) ->
     ok.
     
 %%--------------------------------------------------------------------
-%% @doc Lists existing groups.
-%% @spec listMonitors(MasterNode :: pid()) ->
-%%                    list(string()) | timeout
+%% @doc Returns a list containing the groups' names.
+%% @spec listGroups() -> ListaNombreGrupos :: list(string()) | [error]
 %% @end
 %%--------------------------------------------------------------------
 listGroups() ->
     master:obtener_grupos().
     
 %%--------------------------------------------------------------------
-%% @doc Checks state of a group.
-%% @spec checkMonitor(GroupName :: string(), MasterNode :: node()) ->
-%%                    Value :: list() | timeout
+%% @doc Gets a list of states of a group of sensors.
+%% @spec checkGroup(NombreGrupo :: string()) ->
+%%                           list({NombreSensor :: string(),
+%%                                 CacheValor :: integer() | boolean(),
+%%                                 DiferenciaSegundos :: timestamp()})
+%%                            | timeout
 %% @end
 %%--------------------------------------------------------------------
 checkGroup(NombreGrupo) ->
     master:obtener_estado_grupo(NombreGrupo).
     
-
+%%--------------------------------------------------------------------
+%% @doc Gets the state of a sensor given its group's name.
+%% @spec getSensorValue(NombreGrupo :: string(),
+%%                            NombreSensor :: string()) ->
+%%                            Valor :: integer() :: boolean()
+%%                            | {error, grupo_inexistente}
+%%                            | {error, sensor_inexistente}
+%% @end
+%%--------------------------------------------------------------------
 getSensorValue(NombreGrupo, NombreSensor) ->
     master:obtener_valor_sensor(NombreGrupo, NombreSensor).
 
-
 %%--------------------------------------------------------------------
 %% @doc Updates the server to the last compiled version.
-%% @spec upgrade(MasterNode :: node()) -> ok | timeout
+%% @spec upgrade() -> ok | timeout
 %% @end
 %%--------------------------------------------------------------------
 upgrade() ->
@@ -81,19 +86,16 @@ upgrade() ->
 
 %%--------------------------------------------------------------------
 %% @doc Prints the version on execution.
-%% @spec version(node()) ->
-%%               nonempty_string() |
-%%               timeout
+%% @spec version() -> Version :: string() | timeout
 %% @end
 %%--------------------------------------------------------------------
 version() ->
     master:version().
     
 %%--------------------------------------------------------------------
-%% @doc Pings the specified group.
-%% @spec ping(string(), node()) ->
-%%               pong |
-%%               timeout
+%% @doc Checks if a group is alive.
+%% @spec ping(NombreGrupo :: string()) ->
+%%               {Time :: integer() , pong | timeout}
 %% @end
 %%--------------------------------------------------------------------
 ping(NombreGrupo) ->
