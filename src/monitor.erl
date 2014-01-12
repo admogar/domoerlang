@@ -23,7 +23,6 @@
 
 %%--------------------------------------------------------------------
 %% @doc Starts the monitor.
-%% @spec start_link(GroupPid :: pid())
 %% @end
 %%--------------------------------------------------------------------
 start_link(GroupPid, SensorId) ->
@@ -39,9 +38,6 @@ init(GroupPid, SensorId) ->
 
 %%--------------------------------------------------------------------
 %% @doc Configures a monitor in order to send notifications to a group.
-%% @spec configurar_padre(PidMonitor :: pid(),
-%%                        PidGrupo :: pid())
-%%                        -> ok
 %% @end
 %%--------------------------------------------------------------------
 configurar_padre(PidMonitor, PidGrupo) ->
@@ -49,7 +45,6 @@ configurar_padre(PidMonitor, PidGrupo) ->
 
 %%--------------------------------------------------------------------
 %% @doc Changes the monitor state to started.
-%% @spec start(PidMonitor :: pid()) -> starting
 %% @end
 %%--------------------------------------------------------------------
 start(PidMonitor) ->
@@ -57,7 +52,6 @@ start(PidMonitor) ->
 
 %%--------------------------------------------------------------------
 %% @doc Changes the monitor state to stopped.
-%% @spec pause(PidMonitor :: pid()) -> pausing
 %% @end
 %%--------------------------------------------------------------------
 pause(PidMonitor) ->
