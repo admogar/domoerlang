@@ -18,6 +18,8 @@
 -define(VERSION, 1).
 -export([start/1]).
 
+-export([set_observer/1]).
+
 %%--------------------------------------------------------------------
 %% @doc Starts the sensor.
 %% @spec start(Type) -> pid() | exception
@@ -27,6 +29,9 @@
 %%--------------------------------------------------------------------
 start(Type) ->
     spawn(fun() -> init(Type) end).
+
+set_observer(SensorPid) ->
+    SensorPid ! {self(), setObserver}.
 
 %%% Internal Implementation
 
@@ -50,7 +55,6 @@ init(Type) ->
 loop(State, MonitorPID) ->
     receive
         {FromMonitor, setObserver} ->
-            FromMonitor ! {sensor_initialized},
             loop(State, FromMonitor)
     
     after ?TIMEOUT->
@@ -74,7 +78,8 @@ loop(State, MonitorPID) ->
                          io:format("Error, valor de estado desconocido: ~p", State),
                          throw(valor_inesperado)
                 end
-          ; true -> ignorar_observador_indefinido
-        end,
-        loop(State, MonitorPID)
+          ; true ->
+                %ignorar observador indefinido
+                loop(State, MonitorPID)
+        end
     end.

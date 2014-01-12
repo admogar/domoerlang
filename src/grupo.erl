@@ -39,7 +39,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([crear/1, crear_y_enlazar/1]).
+-export([crear/1, crear_y_enlazar/1, crear_y_enlazar/2]).
 
 -export([anadir_sensor/2, obtener_estado/1, obtener_valor_sensor/2, ping/1]).
 
@@ -60,7 +60,16 @@ crear(PidMaster) ->
 %%--------------------------------------------------------------------
 crear_y_enlazar(PidMaster) ->
     spawn_link(fun() -> init(PidMaster) end).
-    
+
+%%--------------------------------------------------------------------
+%% @doc Creates a group in a given node and links it
+%% @spec crear_y_enlazar(Node :: atom(), PidMaster :: pid())
+%%       -> pid()
+%% @end
+%%--------------------------------------------------------------------
+crear_y_enlazar(Node, PidMaster) ->
+    spawn_link(Node, fun() -> init(PidMaster) end).
+
 %%% anadir_sensor(PidGrupo : pid(), IdSensor: string())
 %%--------------------------------------------------------------------
 %% @doc Adds a sensor to a group. If the group doesn't exist, also
@@ -68,7 +77,7 @@ crear_y_enlazar(PidMaster) ->
 %% @end
 %%--------------------------------------------------------------------
 anadir_sensor(PidGrupo, IdSensor) ->
-    PidGrupo ! {self(), {anadir, IdSensor}}.
+    PidGrupo ! {self(), anadir, IdSensor}.
 
 % Devuelve una lista con lo siguiente:
 % [nombre sensor, valor en cache, tiempo desde el ultimo heartbeat]
@@ -106,8 +115,11 @@ obtener_estado(PidGrupo) ->
 %%--------------------------------------------------------------------
 obtener_valor_sensor(PidGrupo, NombreSensor) ->
     PidGrupo ! {self(), obtener_valor_sensor, NombreSensor},
-    receive ValorOrError -> ValorOrError
-    after ?TIMEOUT -> {error}
+    receive
+        {valor_sensor, Valor} -> Valor
+      ; {error, X} -> {error, X}
+    after
+        ?TIMEOUT -> {error}
     end.
 
 %%--------------------------------------------------------------------
@@ -139,7 +151,7 @@ init(PidMaster) ->
 loop(Monitores, PidMaster) ->
     receive
 
-        {_From, {anadir, IdSensor}} ->
+        {_From, anadir, IdSensor} ->
             % Si ya contenemos el sensor, ignoramos
             case lists:keyfind(IdSensor, #infoMonitor.nombre_sensor, Monitores) of
                 InfoMonitor when is_record(InfoMonitor, infoMonitor) ->
@@ -148,10 +160,11 @@ loop(Monitores, PidMaster) ->
                     % Si no contenemos el monitor lo añadimos y configuramos
                     NuevoMonitor = #infoMonitor{pid_monitor=monitor:start_link(self(), IdSensor),
                                                 nombre_sensor=IdSensor,
-                                                heartbeat_timestamp=os:timestamp()},
+                                                heartbeat_timestamp=os:timestamp()},    
                     NuevosMonitores = [NuevoMonitor| Monitores],
-                    monitor:configurar_padre(NuevoMonitor#infoMonitor.pid_monitor, self()), % Monitor notificará a este grupo (self)
-
+                    PidNuevoMonitor = NuevoMonitor#infoMonitor.pid_monitor,
+                    monitor:configurar_padre(PidNuevoMonitor, self()), % Monitor notificará a este grupo (self)
+                    monitor:start(PidNuevoMonitor),
                     loop(NuevosMonitores, PidMaster)
             end
 
@@ -169,6 +182,7 @@ loop(Monitores, PidMaster) ->
         ; {From, ping} ->
             From ! {self(),pong},
             loop(Monitores, PidMaster)
+    
         ; {From, obtenerEstado} ->
             TimestampAhora=os:timestamp(),
             From ! {info_grupo, [{EstadoMonitor#infoMonitor.nombre_sensor,
@@ -187,6 +201,13 @@ loop(Monitores, PidMaster) ->
             loop(Monitores, PidMaster)
     
         ; {'EXIT', PidMaster, _Reason} -> fin_de_master % Finalizamos la ejecución de grupo porque el master ha finalizado
+
+        ; {'EXIT', PidMonitor, Reason} ->
+            SensorName = find_sensor_name(PidMonitor, Monitores),
+            io:format("The monitor ~p for sensor ~p is down. Reason: ~p. Relaunching.~n", [PidMonitor, SensorName, Reason]),
+            NewMonitorsList = lists:keydelete(PidMonitor, #infoMonitor.pid_monitor, Monitores),
+            anadir_sensor(self(), SensorName),
+            loop(NewMonitorsList, PidMaster)
     
         ; MensajeInesperado ->
             io:format("Mensaje inesperado: ~p~n", [MensajeInesperado]),
@@ -198,3 +219,13 @@ diferencia_segundos(EstadoMonitor, TimestampAhora) ->
     {_, SegundosAhora, _} = TimestampAhora,
     SegundosAhora - SegundosMonitor.
 
+%%--------------------------------------------------------------------
+%% @doc Gets the sensor name from a monitor pid
+%% @spec find_sensor_name(PidMonitor :: pid(), MonitorsList :: list(infoMonitor))
+%%          -> {string()}
+%% @end
+%%--------------------------------------------------------------------
+find_sensor_name(PidMonitor, MonitorsList) ->
+    case lists:keyfind(PidMonitor, #infoMonitor.pid_monitor, MonitorsList) of
+        InfoMonitor -> InfoMonitor#infoMonitor.nombre_sensor
+    end.

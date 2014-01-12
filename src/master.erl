@@ -59,7 +59,7 @@ stop() ->
 %% @end
 %%--------------------------------------------------------------------
 anadir_sensor(NombreGrupo, IdSensor) ->
-    get_master_pid() ! {self(), {add, IdSensor, NombreGrupo}}.
+    get_master_pid() ! {self(), add, IdSensor, NombreGrupo}.
 
 %%--------------------------------------------------------------------
 %% @doc Returns a list containing the groups's names.
@@ -107,9 +107,8 @@ obtener_estado_grupo(NombreGrupo) ->
 obtener_valor_sensor(NombreGrupo, NombreSensor) ->
     get_master_pid() ! {self(), get_valor_sensor, NombreGrupo, NombreSensor},
     receive
-        {valor_sensor, Valor} -> Valor
-      ; {error, grupo_inexistente} -> {error, grupo_inexistente}
-      ; {error, sensor_inexistente} -> {error, sensor_inexistente}
+        {return_valor_sensor, {error, X}} -> {error, X}
+      ; {return_valor_sensor, Valor} -> Valor
     after
         ?TIMEOUT ->
             timeout
@@ -183,14 +182,14 @@ get_master_pid() ->
 %% {'EXIT', Pid, Reason} - En caso de error en monitor, reinicio
 loop(Grupos) ->
     receive
-    	{_From, {add, IdSensor, NombreGrupo}} ->
+    	{_From, add, IdSensor, NombreGrupo} ->
             % getGrupo() crea y añade el grupo en caso de no existir
             {InfoGrupo, NuevoGrupos} = getGrupo(NombreGrupo, Grupos),
             grupo:anadir_sensor(InfoGrupo#infoGrupo.pid_grupo, IdSensor),
     	    loop(NuevoGrupos) ;
 
         {From, get_lista_grupos} ->
-            From ! {grupos, [ InfoGrupo#infoGrupo.nombre || InfoGrupo <- Grupos]},
+            From ! {grupos, [ {InfoGrupo#infoGrupo.nombre, node(InfoGrupo#infoGrupo.pid_grupo)} || InfoGrupo <- Grupos]},
             loop(Grupos) ;
         
         {From, get_estado_grupo, NombreGrupo} ->
@@ -201,16 +200,11 @@ loop(Grupos) ->
         {From, get_valor_sensor, NombreGrupo, NombreSensor} ->
             case existe_grupo(NombreGrupo, Grupos) of
                 false ->
-                    From ! {error, grupo_inexistente},
+                    From ! {return_valor_sensor, {error, grupo_inexistente}},
                     loop(Grupos)
               ; true ->
                     {#infoGrupo{pid_grupo=PidGrupo}, Grupos} = getGrupo(NombreGrupo, Grupos),
-                    grupo:obtener_valor_sensor(PidGrupo, NombreSensor),
-                    receive
-                        ValorOrError -> From ! ValorOrError
-                    after ?TIMEOUT ->
-                        From ! {error}
-                    end,
+                    From ! {return_valor_sensor, grupo:obtener_valor_sensor(PidGrupo, NombreSensor)},
                     loop(Grupos)
             end ;
         
@@ -268,7 +262,21 @@ getGrupo(NombreGrupo, Grupos) ->
             {InfoGrupo, Grupos}
 
         ; false ->
-            PidNuevoGrupo = grupo:crear_y_enlazar(self()), % Se le pasa al constructor el pid del master
+            % Instances a new group in a random node
+            RandomNode = select_random_node(),
+            PidNuevoGrupo = grupo:crear_y_enlazar(RandomNode, self()), % Se le pasa al constructor el pid del master
             NuevoGrupo = #infoGrupo{nombre=NombreGrupo, pid_grupo=PidNuevoGrupo},
             { NuevoGrupo, [NuevoGrupo | Grupos] }
     end.
+
+%%--------------------------------------------------------------------
+%% @doc Return a ramdon node in the network
+%% @spec select_random_node()
+%%       -> atom()
+%% @end
+%%--------------------------------------------------------------------
+select_random_node() ->
+    Nodes = [node()|nodes()], % nodes() does not return own node
+    NumElements = erlang:length(Nodes),
+    RandomIndex = random:uniform(NumElements),
+    lists:nth(RandomIndex, Nodes).
