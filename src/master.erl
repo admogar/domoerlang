@@ -29,7 +29,6 @@
 
 %%--------------------------------------------------------------------
 %% @doc Starts the master.
-%% @spec start() -> ok | exception
 %% @end
 %%--------------------------------------------------------------------
 start() ->
@@ -38,13 +37,6 @@ start() ->
             spawn(fun() -> init() end)
       ; _PidMaster ->
             throw({error, master_already_running})
-    end.
-
-get_master_pid() ->
-    case global:whereis_name(?MASTER) of
-        undefined ->
-            throw({error, master_not_running})
-      ; PidMaster -> PidMaster
     end.
 
 %%--------------------------------------------------------------------
@@ -62,10 +54,19 @@ stop() ->
 	    timeout
     end.
 
+%%--------------------------------------------------------------------
+%% @doc Adds a sensor to a group.
+%% @end
+%%--------------------------------------------------------------------
 anadir_sensor(NombreGrupo, IdSensor) ->
     get_master_pid() ! {self(), {add, IdSensor, NombreGrupo}}.
 
-%% Devuelve una lista con los nombres de grupos o [error]
+%%--------------------------------------------------------------------
+%% @doc Returns a list containing the groups' names.
+%% @spec obtener_grupos() -> ListaNombreGrupos :: list(string())
+%%                           | [error]
+%% @end
+%%--------------------------------------------------------------------
 obtener_grupos() ->
     get_master_pid() ! {self(), get_lista_grupos},
     receive
@@ -75,7 +76,15 @@ obtener_grupos() ->
             [error]
     end.
 
-
+%%--------------------------------------------------------------------
+%% @doc Gets a list of states of a group of sensors.
+%% @spec obtener_estado_grupo(NombreGrupo :: string()) ->
+%%                           list({NombreSensor :: string(),
+%%                                 CacheValor :: integer() | boolean(),
+%%                                 DiferenciaSegundos :: timestamp()})
+%%                            | timeout
+%% @end
+%%--------------------------------------------------------------------
 obtener_estado_grupo(NombreGrupo) ->
     get_master_pid() ! {self(), get_estado_grupo, NombreGrupo},
     receive
@@ -85,6 +94,15 @@ obtener_estado_grupo(NombreGrupo) ->
             timeout
     end.
 
+%%--------------------------------------------------------------------
+%% @doc Gets the state of a sensor given its group's name.
+%% @spec obtener_valor_sensor(NombreGrupo :: string(),
+%%                            NombreSensor :: string()) ->
+%%                            Valor :: integer() :: boolean()
+%%                            | {error, grupo_inexistente}
+%%                            | {error, sensor_inexistente}
+%% @end
+%%--------------------------------------------------------------------
 obtener_valor_sensor(NombreGrupo, NombreSensor) ->
     get_master_pid() ! {self(), get_valor_sensor, NombreGrupo, NombreSensor},
     receive
@@ -96,6 +114,12 @@ obtener_valor_sensor(NombreGrupo, NombreSensor) ->
             timeout
     end.
 
+%%--------------------------------------------------------------------
+%% @doc Upgrades the master code in execution to the last compiled
+%% version.
+%% @spec upgrade() -> ok | timeout
+%% @end
+%%--------------------------------------------------------------------
 upgrade() ->
     get_master_pid() ! {self(), upgrade},
     receive
@@ -106,6 +130,11 @@ upgrade() ->
       timeout
     end.
 
+%%--------------------------------------------------------------------
+%% @doc Shows the master code version in execution.
+%% @spec version() -> Version :: string() | timeout
+%% @end
+%%--------------------------------------------------------------------
 version() ->
     get_master_pid() ! {self(), version},
     receive
@@ -116,6 +145,11 @@ version() ->
       timeout
     end.
     
+%%--------------------------------------------------------------------
+%% @doc Checks if a group is alive.
+%% @spec ping(NombreGrupo :: string()) -> pong | timeout
+%% @end
+%%--------------------------------------------------------------------
 ping(NombreGrupo) -> 
     get_master_pid() ! {self(), ping, NombreGrupo},
     receive
@@ -124,12 +158,20 @@ ping(NombreGrupo) ->
         ?TIMEOUT ->
             timeout
     end.
+
 %%% Internal Implementation
 
 init() ->
     global:register_name(?MASTER, self()),
     process_flag(trap_exit, true),
     loop([]).
+
+get_master_pid() ->
+    case global:whereis_name(?MASTER) of
+        undefined ->
+            throw({error, master_not_running})
+      ; PidMaster -> PidMaster
+    end.
 
 %% {From, {add, Monitor}} - Anadir un monitor
 %% {From, list_monitors} - Lista de monitores en master
