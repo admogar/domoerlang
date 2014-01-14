@@ -116,7 +116,6 @@ loop_started(GroupPid, PidSensor, SensorType, Value) ->
             loop_started(GroupPid, PidSensor, SensorType, NewValue) ;
 
         {_From, pause} ->
-	        _From ! {self(), pausing},         % Pasar a estado stop
             loop_stopped(GroupPid, PidSensor, SensorType, Value)
     
     after
