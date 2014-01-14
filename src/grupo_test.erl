@@ -32,8 +32,8 @@ grupo_test_() ->
 		     Master = global:whereis_name(master),
 		     Grupo = grupo:crear(Master),
 		     grupo:anadir_sensor(Grupo, "luz"),
-		     ?assertMatch([{"luz",_,_}], grupo:obtener_estado(Grupo)),
 		     timer:sleep(4000),
+		     ?assertMatch([{"luz",_,_}], grupo:obtener_estado(Grupo)),
 		     ?assert(erlang:is_boolean(grupo:obtener_valor_sensor(Grupo, "luz"))),
 		     ?assertEqual(pong, grupo:ping(Grupo))
 	     end

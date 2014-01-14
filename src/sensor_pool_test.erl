@@ -18,7 +18,13 @@
 
 sensor_pool_test_() ->
     {setup,
-     fun() -> sensor_pool:start() end,
+     fun() -> try 
+		  sensor_pool:start()
+	      catch
+		  {error, sensor_pool_already_running} ->
+		      ok
+	      end
+     end,
      fun(_) ->
 	     fun() ->
 		     test_bin_("luz"),
