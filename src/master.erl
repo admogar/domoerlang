@@ -183,6 +183,7 @@ get_master_pid() ->
 %% {From, stop} - Parar master
 %% {'EXIT', Pid, Reason} - En caso de error en monitor, reinicio
 loop(Grupos) ->
+  try
     receive
     	{_From, add, IdSensor, NombreGrupo} ->
             % getGrupo() crea y añade el grupo en caso de no existir
@@ -195,9 +196,9 @@ loop(Grupos) ->
             loop(Grupos) ;
         
         {From, get_estado_grupo, NombreGrupo} ->
-            {#infoGrupo{pid_grupo=PidGrupo}, Grupos} = getGrupo(NombreGrupo, Grupos),
+            {#infoGrupo{pid_grupo=PidGrupo}, _GruposIncrementado} = getGrupo(NombreGrupo, Grupos),
             From ! {estado_grupo, grupo:obtener_estado(PidGrupo)},
-            loop(Grupos) ;
+            loop(Grupos) ; % No añadir el grupo en caso de que no existiera
 
         {From, get_valor_sensor, NombreGrupo, NombreSensor} ->
             case existe_grupo(NombreGrupo, Grupos) of
@@ -245,7 +246,12 @@ loop(Grupos) ->
         Msg ->
     	    io:format("[~p] WTF? ~p~n", [?MODULE, Msg]),
     	    loop(Grupos)
-    end.
+    end
+  catch
+     Excepcion ->
+        io:format("Excepcion ~p~n", [Excepcion]),
+        loop(Grupos)
+  end.
 
 
 %% Indica si un grupo existe o no, sin crearlo.
@@ -260,15 +266,16 @@ existe_grupo(NombreGrupo, Grupos) ->
 %% salida: {InfoGrupo, Grupos}
 getGrupo(NombreGrupo, Grupos) ->
     case lists:keyfind(NombreGrupo, #infoGrupo.nombre, Grupos) of
-        InfoGrupo when is_record(InfoGrupo, infoGrupo) ->
-            {InfoGrupo, Grupos}
-
-        ; false ->
+          false ->
             % Instances a new group in a random node
             RandomNode = select_random_node(),
             PidNuevoGrupo = grupo:crear_y_enlazar(RandomNode, self()), % Se le pasa al constructor el pid del master
             NuevoGrupo = #infoGrupo{nombre=NombreGrupo, pid_grupo=PidNuevoGrupo},
             { NuevoGrupo, [NuevoGrupo | Grupos] }
+
+        ; InfoGrupo ->
+            {InfoGrupo, Grupos}
+
     end.
 
 %%--------------------------------------------------------------------

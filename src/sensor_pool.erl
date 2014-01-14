@@ -62,11 +62,12 @@ loop(SensorList) ->
     receive
         {From, getSensor, SensorName} ->
             case lists:keyfind(SensorName, 1, SensorList) of
-                {SensorName, SensorType, PidSensor} ->
-                    From ! {return_getSensor, SensorType, PidSensor};
-        		
                 false ->
                     From ! null
+
+              ; {SensorName, SensorType, PidSensor} ->
+                    From ! {return_getSensor, SensorType, PidSensor}
+        		
             end,
             loop(SensorList);
     	
