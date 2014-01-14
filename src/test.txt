@@ -1,0 +1,41 @@
+%COMPILE:
+	c(client).
+	c(grupo).
+	c(master).
+	c(monitor).
+	c(sensor_pool).
+	c(sensor).
+	c(client_test).
+	c(grupo_test).
+	c(master_test).
+	c(monitor_test).
+	c(sensor_pool_test).
+	c(sensor_test).
+
+%EUNIT: 
+	eunit:test(client_test).
+	eunit:test(grupo_test).
+	eunit:test(master_test).
+	eunit:test(monitor_test).
+	eunit:test(sensor_pool_test).
+	eunit:test(sensor_test).
+%COVER:
+	cover:start().
+	cover:compile(client).
+	cover:compile(grupo).
+	cover:compile(master).
+	cover:compile(monitor).
+	cover:compile(sensor_pool).
+	cover:compile(sensor).
+	eunit:test(client_test).
+	eunit:test(grupo_test).
+	eunit:test(master_test).
+	eunit:test(monitor_test).
+	eunit:test(sensor_pool_test).
+	eunit:test(sensor_test).
+	cover:analyse_to_file(client,[html]).
+	cover:analyse_to_file(grupo,[html]).
+	cover:analyse_to_file(master,[html]).
+	cover:analyse_to_file(monitor,[html]).
+	cover:analyse_to_file(sensor_pool,[html]).
+	cover:analyse_to_file(sensor,[html]).

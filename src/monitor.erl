@@ -105,7 +105,9 @@ loop_started(GroupPid, PidSensor, SensorType, Value) ->
         {valor, NewValue} ->
             case SensorType of
                 num ->
-                    if erlang:abs(NewValue - Value) > 70 -> GroupPid ! {self(), heartbeat, NewValue} end ;
+                    if (NewValue - Value) > 70 -> GroupPid ! {self(), heartbeat, NewValue};
+		       true -> ignore
+		    end ;
                     
                 bin ->
                     if
