@@ -62,7 +62,7 @@ anadir_sensor(NombreGrupo, IdSensor) ->
     get_master_pid() ! {self(), add, IdSensor, NombreGrupo}.
 
 %%--------------------------------------------------------------------
-%% @doc Returns a list containing the groups's names.
+%% @doc Returns a list containing the groups' names.
 %% @spec obtener_grupos() -> ListaNombreGrupos :: list(string())
 %%                           | [error]
 %% @end
@@ -270,7 +270,7 @@ getGrupo(NombreGrupo, Grupos) ->
     end.
 
 %%--------------------------------------------------------------------
-%% @doc Return a ramdon node in the network
+%% @doc Return a random node in the network
 %% @spec select_random_node()
 %%       -> atom()
 %% @end
