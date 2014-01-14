@@ -17,7 +17,14 @@
 
 master_test_() ->
     {setup,
-     fun() -> master:start() end,
+     fun() ->
+	     try
+		 sensor_pool:start()
+	     catch
+		 {error, sensor_pool_already_running} ->
+		     ok
+	     end,
+	     master:start() end,
      fun(_) -> master:stop() end,
      fun(_) ->
 	     fun() ->
@@ -26,9 +33,7 @@ master_test_() ->
 		     test_congrupo(),
 		     test_estadogrupo(),
 		     test_valorsensor(),
-		     test_ping(),
-		     ?assert(erlang:is_string(master:version())),
-		     ?assertEqual(ok, master:upgrade())
+		     test_ping()
 	     end
      end}.
 
@@ -47,7 +52,8 @@ test_estadogrupo() ->
     ?assertMatch([{"luz",_,_}], master:obtener_estado_grupo("cocina")).
 
 test_valorsensor() ->
-    ?assert(erlang:is_boolean(master:obtener_valor_sensor("cocina","luz"))).
+    timer:sleep(4000),
+    ?assert(erlang:is_boolean(master:obtener_valor_sensor("cocina", "luz"))).
 
 test_ping() ->
-    ?assertEqual(pong, master:ping()).
+    ?assertEqual(pong, master:ping("cocina")).
