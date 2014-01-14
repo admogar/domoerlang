@@ -26,10 +26,13 @@ client_test_() ->
 		     test_listGroups([{"cocina", nonode@nohost}]),
 		     test_check("cocina"),
 		     test_ping("cocina"),
-		     test_bin("cocina", "luz"),
-		     test_num("cocina", "temperatura"),
-		     ?assert(erlang:is_string(client:version())),
-		     ?assertEqual(ok, client:upgrade())
+		     fun() -> {parallel,
+		      [
+		       test_bin("cocina", "luz"),
+		       test_num("cocina", "temperatura")
+		      ]
+		     }
+		     end
 	     end
      end}.
 
@@ -41,16 +44,23 @@ test_check(GroupName) ->
 		  client:checkGroup(GroupName)).
 
 test_bin(GroupName, SensorName) ->
+    timer:sleep(4000),
     ?assert(erlang:is_boolean(client:getSensorValue(GroupName, SensorName))).
 
 test_num(GroupName, SensorName) ->
+    timer:sleep(4000),
     ?assert(erlang:is_integer(client:getSensorValue(GroupName, SensorName))).
 
 test_ping(GroupName) ->
     ?assertMatch({_, pong}, client:ping(GroupName)).
 
 setup() ->
-    sensor_pool:start(),
+    try
+	sensor_pool:start()
+    catch
+	{error, sensor_pool_already_running} ->
+	    ok
+    end,
     client:start().
 
 teardown() ->
