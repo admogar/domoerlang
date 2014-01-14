@@ -197,7 +197,13 @@ loop(Grupos) ->
         
         {From, get_estado_grupo, NombreGrupo} ->
             {#infoGrupo{pid_grupo=PidGrupo}, _GruposIncrementado} = getGrupo(NombreGrupo, Grupos),
-            From ! {estado_grupo, grupo:obtener_estado(PidGrupo)},
+            EstadoGrupo = grupo:obtener_estado(PidGrupo),
+            From ! {estado_grupo, EstadoGrupo},
+            if % Si es un grupo vacío, se borra
+                EstadoGrupo == [] ->
+                    grupo:finalizar(PidGrupo)
+                ; true -> ignore % grupo no vacío
+            end,
             loop(Grupos) ; % No añadir el grupo en caso de que no existiera
 
         {From, get_valor_sensor, NombreGrupo, NombreSensor} ->

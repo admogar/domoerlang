@@ -39,7 +39,7 @@
 %% ====================================================================
 %% API functions
 %% ====================================================================
--export([crear/1, crear_y_enlazar/1, crear_y_enlazar/2]).
+-export([crear/1, crear_y_enlazar/1, crear_y_enlazar/2, finalizar/1]).
 
 -export([anadir_sensor/2, obtener_estado/1, obtener_valor_sensor/2, ping/1]).
 
@@ -135,6 +135,16 @@ ping(PidGrupo) ->
         ?TIMEOUT -> {error}
     end.
 
+%%--------------------------------------------------------------------
+%% @doc Finaliza la ejecución de un grupo. Al finalizar un grupo
+%%      finalizan sus monitores ya que están linkados.
+%% @spec finalizar(PidGrupo :: pid()) -> ok.
+%% @end
+%%--------------------------------------------------------------------
+finalizar(PidGrupo) ->
+    unlink(PidGrupo),
+    PidGrupo ! {finalizar},
+    ok.
 
 %% ====================================================================
 %% Internal functions
@@ -208,6 +218,8 @@ loop(Monitores, PidMaster) ->
             NewMonitorsList = lists:keydelete(PidMonitor, #infoMonitor.pid_monitor, Monitores),
             anadir_sensor(self(), SensorName),
             loop(NewMonitorsList, PidMaster)
+
+        ; {finalizar} -> finalizando
     
         ; MensajeInesperado ->
             io:format("Mensaje inesperado: ~p~n", [MensajeInesperado]),
