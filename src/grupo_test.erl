@@ -17,7 +17,15 @@
 
 grupo_test_() ->
     {setup,
-     fun() -> sensor_pool:start(), master:start() end,
+     fun() -> 
+	     try
+		 sensor_pool:start()
+	     catch
+		 {error, sensor_pool_already_running} ->
+		     ok
+	     end,
+	     master:start()
+     end,
      fun(_) -> master:stop() end,
      fun(_) ->
 	     fun() -> 
@@ -25,6 +33,7 @@ grupo_test_() ->
 		     Grupo = grupo:crear(Master),
 		     grupo:anadir_sensor(Grupo, "luz"),
 		     ?assertMatch([{"luz",_,_}], grupo:obtener_estado(Grupo)),
+		     timer:sleep(4000),
 		     ?assert(erlang:is_boolean(grupo:obtener_valor_sensor(Grupo, "luz"))),
 		     ?assertEqual(pong, grupo:ping(Grupo))
 	     end
