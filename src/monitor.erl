@@ -104,7 +104,7 @@ loop_started(GroupPid, PidSensor, SensorType, Value) ->
 
         {valor, NewValue} ->
             case SensorType of
-                {num,_,_} ->
+                num ->
                     if NewValue - Value > 70 -> GroupPid ! {self(), heartbeat, NewValue} end ;
                     
                 bin ->
