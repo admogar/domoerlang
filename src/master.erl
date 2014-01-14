@@ -34,7 +34,9 @@
 start() ->
     case global:whereis_name(?MASTER) of
         undefined ->
-            spawn(fun() -> init() end)
+            PidMaster = spawn(fun() -> init() end),
+            timer:sleep(1000),
+            PidMaster
       ; _PidMaster ->
             throw({error, master_already_running})
     end.
