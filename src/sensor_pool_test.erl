@@ -20,10 +20,11 @@ sensor_pool_test_() ->
     {setup,
      fun() -> sensor_pool:start() end,
      fun(_) ->
-	     {inparallel,
-	      [test_bin_("luz"),
-	       test_num_("temperatura"),
-	       test_unknown_("sensor")]}
+	     fun() ->
+		     test_bin_("luz"),
+		     test_num_("temperatura"),
+		     test_unknown_("sensor")
+	     end
      end}.
 
 test_bin_(SensorName) ->

@@ -30,6 +30,10 @@
 start(Type) ->
     spawn(fun() -> init(Type) end).
 
+%%--------------------------------------------------------------------
+%% @doc Sets the sensor observer.
+%% @end
+%%--------------------------------------------------------------------
 set_observer(SensorPid) ->
     SensorPid ! {self(), setObserver}.
 

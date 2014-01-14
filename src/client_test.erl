@@ -21,18 +21,15 @@ client_test_() ->
      fun(_) -> teardown() end,
      fun(_) ->
 	     fun() ->
-		     {inorder,
-		      [
-		       client:add("cocina", "luz"),
-		       client:add("cocina", "temperatura"),
-		       test_listGroups([{"cocina", nonode@nohost}]),
-		       test_check("cocina"),
-		       test_ping("cocina"),
-		       test_bin("cocina", "luz"),
-		       test_num("cocina", "temperatura"),
-		       ?assert(erlang:is_string(client:version())),
-		       ?assertEqual(ok, client:upgrade())
-		      ]}
+		     client:add("cocina", "luz"),
+		     client:add("cocina", "temperatura"),
+		     test_listGroups([{"cocina", nonode@nohost}]),
+		     test_check("cocina"),
+		     test_ping("cocina"),
+		     test_bin("cocina", "luz"),
+		     test_num("cocina", "temperatura"),
+		     ?assert(erlang:is_string(client:version())),
+		     ?assertEqual(ok, client:upgrade())
 	     end
      end}.
 

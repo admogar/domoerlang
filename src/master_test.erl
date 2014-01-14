@@ -21,17 +21,14 @@ master_test_() ->
      fun(_) -> master:stop() end,
      fun(_) ->
 	     fun() ->
-		     {inorder,
-		      [
-		       test_singrupos(),
-		       test_nogrupo(),
-		       test_congrupo(),
-		       test_estadogrupo(),
-		       test_valorsensor(),
-		       test_ping(),
-		       ?assert(erlang:is_string(master:version())),
-		       ?assertEqual(ok, master:upgrade())
-		      ]}
+		     test_singrupos(),
+		     test_nogrupo(),
+		     test_congrupo(),
+		     test_estadogrupo(),
+		     test_valorsensor(),
+		     test_ping(),
+		     ?assert(erlang:is_string(master:version())),
+		     ?assertEqual(ok, master:upgrade())
 	     end
      end}.
 
